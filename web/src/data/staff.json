@@ -1,0 +1,32 @@
+{
+  "_note": "Staff roles. perGuests = one needed for this many guests (0 = not required). wage = daily wage at skill 1; each skill level adds wagePerSkill.",
+  "roles": [
+    {"id":"waiter","en":"Waiter","ar":"نادل","perGuests":25,"wage":55,"wagePerSkill":12,"uniform":"waiter"},
+    {"id":"cook","en":"Cook","ar":"طاهٍ","perGuests":50,"wage":80,"wagePerSkill":18,"uniform":"cook"},
+    {"id":"cleaner","en":"Cleaner","ar":"عامل نظافة","perGuests":80,"wage":45,"wagePerSkill":9,"uniform":"cleaner"},
+    {"id":"security","en":"Security","ar":"حارس أمن","perGuests":100,"wage":60,"wagePerSkill":12,"uniform":"security"},
+    {"id":"bartender","en":"Bartender","ar":"ساقي البار","perGuests":75,"wage":60,"wagePerSkill":14,"uniform":"bartender","onlyIf":"bar"},
+    {"id":"decorator","en":"Decorator","ar":"منسق ديكور","perGuests":150,"wage":70,"wagePerSkill":15,"uniform":"decorator"},
+    {"id":"sound_tech","en":"Sound & power tech","ar":"فني صوت وكهرباء","perGuests":300,"wage":75,"wagePerSkill":16,"uniform":"tech"},
+    {"id":"valet","en":"Valet driver","ar":"سائق صف السيارات","perGuests":100,"wage":45,"wagePerSkill":9,"uniform":"valet"},
+    {"id":"host","en":"Host","ar":"مضيف","perGuests":200,"wage":65,"wagePerSkill":14,"uniform":"host"},
+    {"id":"manager","en":"Event manager","ar":"مدير الحفلات","perGuests":0,"wage":160,"wagePerSkill":45,"uniform":"manager"},
+    {"id":"social","en":"Social media manager","ar":"مدير التواصل الاجتماعي","perGuests":0,"wage":90,"wagePerSkill":20,"uniform":"host"}
+  ],
+  "traits": {
+    "fast":{"en":"Fast","ar":"سريع","skill":0.3},
+    "friendly":{"en":"Friendly","ar":"ودود","happiness":0.5},
+    "lazy":{"en":"Lazy","ar":"كسول","skill":-0.4,"morale":-0.2},
+    "clumsy":{"en":"Clumsy","ar":"أخرق","problem":0.15},
+    "rising_star":{"en":"Rising star","ar":"نجم صاعد","growth":2},
+    "loyal":{"en":"Loyal","ar":"وفي","morale":0.5},
+    "grumpy":{"en":"Grumpy","ar":"متذمر","happiness":-0.4},
+    "reliable":{"en":"Reliable","ar":"موثوق","problem":-0.1}
+  },
+  "interviewCost":80,
+  "hireBonusDays":2,
+  "trainCostPerLevel":900,
+  "raisePercent":0.12,
+  "morale": {"start":75,"maxWeddingsPerWeek":5,"overworkPenalty":6,"underpaidPenalty":3,"dailyRecovery":1.2,"askRaiseBelow":38,"quitBelow":14},
+  "candidatesPerRefresh":7
+}

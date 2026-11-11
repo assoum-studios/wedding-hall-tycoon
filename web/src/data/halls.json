@@ -1,0 +1,71 @@
+{
+  "_note": "Halls, sizes, upgrades, research and build-mode items.",
+  "sizes": [
+    {"capacity":120,"w":18,"d":14,"cost":0},
+    {"capacity":220,"w":22,"d":16,"cost":28000},
+    {"capacity":400,"w":28,"d":20,"cost":75000},
+    {"capacity":550,"w":32,"d":24,"cost":160000},
+    {"capacity":750,"w":38,"d":28,"cost":320000},
+    {"capacity":1000,"w":44,"d":32,"cost":600000}
+  ],
+  "halls": [
+    {"id":"rose","en":"The Rose Hall","ar":"قاعة الورد","atmosphere":"coastal","cost":0,"budgetMult":1.0,"weather":"mild","clientTags":["romantic","classic","beach"],"competitor":{"en":"The Grand Palace","ar":"القصر الكبير"},"palette":{"wall":"#f4e6cc","trim":"#d9b45a","roof":"#e9d8b8","ground":"#d8cdb8"}},
+    {"id":"mountain","en":"Mountain View","ar":"إطلالة الجبل","atmosphere":"mountain","cost":250000,"budgetMult":1.15,"weather":"cold","clientTags":["rustic","fairytale","classic"],"competitor":{"en":"Summit Lodge","ar":"نُزُل القمة"},"palette":{"wall":"#8a5a3b","trim":"#e8d3a8","roof":"#5c3a28","ground":"#e8eef2"}},
+    {"id":"downtown","en":"Downtown Sky Hall","ar":"قاعة السماء وسط المدينة","atmosphere":"downtown","cost":600000,"budgetMult":1.35,"weather":"mild","clientTags":["glam","party","royal"],"competitor":{"en":"Skyline Club","ar":"نادي الأفق"},"palette":{"wall":"#d8dde6","trim":"#c9a24a","roof":"#3b4252","ground":"#6b7280"}},
+    {"id":"desert","en":"Desert Oasis Palace","ar":"قصر واحة الصحراء","atmosphere":"desert","cost":1200000,"budgetMult":1.5,"weather":"hot","clientTags":["royal","glam","party"],"competitor":{"en":"Mirage Resort","ar":"منتجع السراب"},"palette":{"wall":"#f0d9a8","trim":"#1e8a8a","roof":"#e2c27e","ground":"#e9c98d"}},
+    {"id":"lakeside","en":"Lakeside Garden","ar":"حديقة البحيرة","atmosphere":"lakeside","cost":2400000,"budgetMult":1.7,"weather":"mild","clientTags":["boho","fairytale","romantic"],"competitor":{"en":"Willow House","ar":"بيت الصفصاف"},"palette":{"wall":"#f7f3ea","trim":"#7aa874","roof":"#4f7a5a","ground":"#9cc47f"}},
+    {"id":"castle","en":"Historic Castle","ar":"القلعة التاريخية","atmosphere":"castle","cost":4500000,"budgetMult":2.0,"weather":"mild","clientTags":["royal","fairytale","classic"],"competitor":{"en":"Baron's Manor","ar":"قصر البارون"},"palette":{"wall":"#a9a39a","trim":"#7a2a3a","roof":"#5a5f6a","ground":"#8fae6e"}}
+  ],
+  "upgrades": [
+    {"id":"kitchen","en":"Kitchen","ar":"المطبخ","baseCost":3500,"happiness":1.0},
+    {"id":"stage","en":"Stage & sound","ar":"المسرح والصوت","baseCost":3000,"happiness":1.0},
+    {"id":"decor","en":"Decor & lighting","ar":"الديكور والإضاءة","baseCost":3200,"happiness":1.2},
+    {"id":"dance_floor","en":"Dance floor","ar":"حلبة الرقص","baseCost":2800,"happiness":1.0},
+    {"id":"entrance","en":"Entrance","ar":"المدخل","baseCost":2500,"happiness":0.8},
+    {"id":"brides_room","en":"Bride's room","ar":"غرفة العروس","baseCost":2400,"happiness":0.8},
+    {"id":"parking","en":"Parking","ar":"موقف السيارات","baseCost":2200,"happiness":0.5},
+    {"id":"generator","en":"Generator","ar":"المولد الكهربائي","baseCost":2600,"happiness":0.3},
+    {"id":"tables","en":"Tables","ar":"الطاولات","baseCost":2000,"happiness":0.8},
+    {"id":"bar","en":"Bar","ar":"البار","baseCost":2400,"happiness":0.7},
+    {"id":"restrooms","en":"Restrooms","ar":"دورات المياه","baseCost":1800,"happiness":0.5},
+    {"id":"ac","en":"Air conditioning","ar":"التكييف","baseCost":3000,"happiness":0.6},
+    {"id":"security_room","en":"Security room","ar":"غرفة الأمن","baseCost":2000,"happiness":0.3},
+    {"id":"staff_room","en":"Staff room","ar":"غرفة الموظفين","baseCost":1800,"happiness":0.3},
+    {"id":"storage","en":"Storage","ar":"المخزن","baseCost":1600,"happiness":0.3},
+    {"id":"photo_spots","en":"Photo spots","ar":"زوايا التصوير","baseCost":2200,"happiness":0.8}
+  ],
+  "upgradeCostGrowth": 2.3,
+  "upgradeMaxLevel": 5,
+  "upgradeProblemReductionPerLevel": 0.15,
+  "research": [
+    {"id":"fast_service","en":"Faster service","ar":"خدمة أسرع","cost":12000,"days":3,"requires":[],"effect":{"staffNeedMult":0.9}},
+    {"id":"cheap_flowers","en":"Cheaper flowers","ar":"زهور أرخص","cost":10000,"days":3,"requires":[],"effect":{"decorCostMult":0.85}},
+    {"id":"strong_generator","en":"Stronger generator","ar":"مولد أقوى","cost":15000,"days":4,"requires":[],"effect":{"powerProblemMult":0.4}},
+    {"id":"vip_lounge","en":"VIP lounge","ar":"صالة كبار الزوار","cost":40000,"days":6,"requires":["fast_service"],"effect":{"budgetMult":1.08,"vipChanceAdd":0.05}},
+    {"id":"chef_training","en":"Chef academy","ar":"أكاديمية الطهاة","cost":25000,"days":5,"requires":["fast_service"],"effect":{"foodCostMult":0.9}},
+    {"id":"social_savvy","en":"Social media savvy","ar":"خبرة التواصل الاجتماعي","cost":18000,"days":4,"requires":[],"effect":{"followerMult":1.3}},
+    {"id":"crisis_drills","en":"Crisis drills","ar":"تدريبات الطوارئ","cost":30000,"days":5,"requires":["strong_generator"],"effect":{"problemMult":0.85}},
+    {"id":"negotiation","en":"Negotiation course","ar":"دورة في التفاوض","cost":22000,"days":4,"requires":[],"effect":{"toleranceMult":1.08}},
+    {"id":"staff_wellbeing","en":"Staff wellbeing","ar":"رفاهية الموظفين","cost":20000,"days":4,"requires":[],"effect":{"moraleDecayMult":0.6}},
+    {"id":"premium_brand","en":"Premium brand","ar":"علامة فاخرة","cost":90000,"days":8,"requires":["vip_lounge","social_savvy"],"effect":{"budgetMult":1.12}},
+    {"id":"logistics","en":"Logistics master","ar":"إتقان الخدمات اللوجستية","cost":60000,"days":6,"requires":["crisis_drills"],"effect":{"upkeepMult":0.85}},
+    {"id":"legendary_service","en":"Legendary service","ar":"خدمة أسطورية","cost":250000,"days":10,"requires":["premium_brand","logistics","chef_training"],"effect":{"happinessAdd":4}}
+  ],
+  "items": [
+    {"id":"round_table","en":"Round table (10)","ar":"طاولة دائرية (10)","w":3,"d":3,"cost":250,"seats":10,"kind":"table"},
+    {"id":"long_table","en":"Long table (8)","ar":"طاولة طويلة (8)","w":2,"d":4,"cost":220,"seats":8,"kind":"table"},
+    {"id":"sweetheart","en":"Couple's table","ar":"طاولة العروسين","w":3,"d":2,"cost":400,"seats":2,"kind":"head"},
+    {"id":"stage","en":"Stage","ar":"المسرح","w":6,"d":3,"cost":900,"kind":"stage"},
+    {"id":"dance_floor","en":"Dance floor","ar":"حلبة الرقص","w":6,"d":6,"cost":800,"kind":"dance"},
+    {"id":"bar","en":"Bar","ar":"البار","w":4,"d":2,"cost":700,"kind":"bar"},
+    {"id":"buffet","en":"Buffet","ar":"البوفيه","w":4,"d":2,"cost":600,"kind":"buffet"},
+    {"id":"cake","en":"Cake table","ar":"طاولة الكعكة","w":2,"d":2,"cost":300,"kind":"cake"},
+    {"id":"dj","en":"DJ booth","ar":"منصة منسق الأغاني","w":3,"d":2,"cost":500,"kind":"dj"},
+    {"id":"plant","en":"Potted plant","ar":"نبتة","w":1,"d":1,"cost":60,"kind":"decor","decor":1},
+    {"id":"flower_arch","en":"Flower arch","ar":"قوس زهور","w":3,"d":1,"cost":350,"kind":"decor","decor":3},
+    {"id":"lamp","en":"Standing lamp","ar":"مصباح أرضي","w":1,"d":1,"cost":90,"kind":"decor","decor":1},
+    {"id":"rose_bush","en":"White rose bush","ar":"شجيرة ورد أبيض","w":1,"d":1,"cost":80,"kind":"decor","decor":1},
+    {"id":"photo_wall","en":"Photo wall","ar":"جدار التصوير","w":3,"d":1,"cost":300,"kind":"decor","decor":2},
+    {"id":"fountain","en":"Fountain","ar":"نافورة","w":2,"d":2,"cost":700,"kind":"decor","decor":3}
+  ]
+}

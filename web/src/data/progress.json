@@ -1,0 +1,83 @@
+{
+  "_note": "Chapters, weekly goals, achievements, seasonal events, daily gift. Goal types are explained in src/progress/goals.ts.",
+  "chapters": [
+    {"id":1,"en":"A fresh start","ar":"بداية جديدة","reward":5000,"goals":[{"type":"weddings","n":3},{"type":"upgrades","n":3}],"bonus":[{"type":"withinDays","n":12},{"type":"avgHappiness","n":70}],
+     "endEn":"Nadia smiles: \"The hall feels alive again. Rosa would love this.\"","endAr":"تبتسم نادية: \"القاعة تنبض بالحياة من جديد. كانت روزا ستحب هذا.\""},
+    {"id":2,"en":"Rosa's debt","ar":"دين روزا","reward":8000,"goals":[{"type":"rosaDebtPaid"},{"type":"teamSize","n":8}],"bonus":[{"type":"withinDays","n":20},{"type":"noLoans"}],
+     "endEn":"The bank manager shakes your hand. The Rose Hall is finally free of debt.","endAr":"مدير البنك يصافحك. قاعة الورد أصبحت أخيراً بلا ديون."},
+    {"id":3,"en":"The rival","ar":"المنافس","reward":12000,"goals":[{"type":"beatVictor"},{"type":"happyWedding","n":90}],"bonus":[{"type":"withinDays","n":20},{"type":"avgHappiness","n":78}],
+     "endEn":"Victor calls: \"Beginner's luck. Enjoy it while it lasts.\"","endAr":"يتصل فيكتور: \"حظ المبتدئين. استمتع به ما دام.\""},
+    {"id":4,"en":"Growing love","ar":"حب يكبر","reward":20000,"goals":[{"type":"hallSize","n":4},{"type":"guestsWedding","n":400},{"type":"hireManager"}],"bonus":[{"type":"withinDays","n":30},{"type":"avgHappiness","n":80}],
+     "endEn":"Your new manager hands you a tablet: \"Boss, the calendar is full!\"","endAr":"يناولك مديرك الجديد جهازاً لوحياً: \"سيدي، التقويم ممتلئ!\""},
+    {"id":5,"en":"Victor strikes back","ar":"فيكتور يرد الضربة","reward":30000,"goals":[{"type":"sabotage","n":3},{"type":"weddings","n":5}],"bonus":[{"type":"avgHappiness","n":80},{"type":"withinDays","n":25}],
+     "endEn":"Victor's tricks failed. The city is talking about your resilience.","endAr":"فشلت حيل فيكتور. المدينة كلها تتحدث عن صمودك."},
+    {"id":6,"en":"The wedding of the century","ar":"عرس القرن","reward":50000,"goals":[{"type":"celebrity","n":95}],"bonus":[{"type":"withinDays","n":25},{"type":"followers","n":5000}],
+     "endEn":"Cameras flash all night. Your hall is on every front page.","endAr":"الكاميرات تومض طوال الليل. قاعتك على كل الصفحات الأولى."},
+    {"id":7,"en":"Going viral","ar":"شهرة واسعة","reward":60000,"goals":[{"type":"followers","n":10000}],"bonus":[{"type":"withinDays","n":25},{"type":"avgHappiness","n":82}],
+     "endEn":"Ten thousand people follow the Rose Hall on Vowly!","endAr":"عشرة آلاف شخص يتابعون قاعة الورد على فاولي!"},
+    {"id":8,"en":"A thousand guests","ar":"ألف ضيف","reward":100000,"goals":[{"type":"capacity","n":1000},{"type":"guestsWedding","n":700}],"bonus":[{"type":"withinDays","n":40},{"type":"avgHappiness","n":82}],
+     "endEn":"Seven hundred guests danced under your chandeliers tonight.","endAr":"سبعمئة ضيف رقصوا تحت ثرياتك الليلة."},
+    {"id":9,"en":"Second home","ar":"البيت الثاني","reward":150000,"goals":[{"type":"hallsOwned","n":2},{"type":"weddingsInHall","hall":1,"n":10}],"bonus":[{"type":"withinDays","n":45},{"type":"avgHappiness","n":82}],
+     "endEn":"Two halls, one family. Rosa's dream is growing.","endAr":"قاعتان وعائلة واحدة. حلم روزا يكبر."},
+    {"id":10,"en":"Victor's last move","ar":"خطوة فيكتور الأخيرة","reward":250000,"goals":[{"type":"ratingLead","n":20}],"bonus":[{"type":"withinDays","n":30},{"type":"avgHappiness","n":85}],
+     "endEn":"Victor's offer to buy your hall is torn in half. You are the best in town.","endAr":"تمزق عرض فيكتور لشراء قاعتك. أنت الأفضل في المدينة."},
+    {"id":11,"en":"Three halls","ar":"ثلاث قاعات","reward":400000,"goals":[{"type":"hallsManaged","n":3}],"bonus":[{"type":"withinDays","n":60},{"type":"avgHappiness","n":85}],
+     "endEn":"Three halls run like clockwork, each with a trusted manager.","endAr":"ثلاث قاعات تعمل بدقة، ولكل منها مدير موثوق."},
+    {"id":12,"en":"The Rose legacy","ar":"إرث روزا","reward":1000000,"goals":[{"type":"allHallsRating","n":90},{"type":"totalWeddings","n":250}],"bonus":[{"type":"hallsOwned","n":6},{"type":"avgHappiness","n":88}],
+     "endEn":"A bouquet arrives from Victor: \"You win. Rosa would be proud.\"","endAr":"تصل باقة ورد من فيكتور: \"لقد فزت. كانت روزا ستفخر بك.\""}
+  ],
+  "weeklyTemplates": [
+    {"type":"weddings","en":"Host {n} weddings","ar":"استضف {n} أعراس","base":2,"scale":0.25,"reward":1500},
+    {"type":"problemsFixed","en":"Fix {n} problems","ar":"أصلح {n} مشاكل","base":4,"scale":0.6,"reward":1200},
+    {"type":"happyWedding","en":"Host a {n}% night","ar":"استضف ليلة بنسبة رضا {n}%","base":88,"scale":0,"reward":2000,"fixed":true},
+    {"type":"earn","en":"Earn ${n}","ar":"اكسب ${n}","base":15000,"scale":6000,"reward":2500},
+    {"type":"hire","en":"Hire {n} staff","ar":"وظّف {n} موظفين","base":1,"scale":0.2,"reward":1000},
+    {"type":"perfectTheme","en":"Get a perfect theme match","ar":"حقق تطابقاً تاماً مع الثيم","base":1,"scale":0,"reward":1800,"fixed":true},
+    {"type":"miniMoments","en":"Nail {n} mini-moments","ar":"أتقن {n} لحظات مميزة","base":4,"scale":0.5,"reward":1200},
+    {"type":"upgrades","en":"Buy {n} upgrades","ar":"اشترِ {n} تطويرات","base":1,"scale":0.2,"reward":1500}
+  ],
+  "achievementGroups": [
+    {"stat":"weddings","en":"Host {n} weddings","ar":"استضف {n} أعراس","tiers":[1,5,10,25,50,100,250,500,1000],"reward":800},
+    {"stat":"guestsServed","en":"Serve {n} guests","ar":"قدّم الخدمة لـ {n} ضيف","tiers":[500,2500,10000,50000,150000,500000],"reward":1000},
+    {"stat":"moneyEarned","en":"Earn ${n} in total","ar":"اكسب ${n} إجمالاً","tiers":[50000,250000,1000000,5000000,20000000,100000000],"reward":2000},
+    {"stat":"problemsFixed","en":"Fix {n} problems","ar":"أصلح {n} مشكلة","tiers":[5,25,100,300,1000],"reward":900},
+    {"stat":"perfectWeddings","en":"Host {n} weddings at 95%+","ar":"استضف {n} أعراس بنسبة 95%+","tiers":[1,5,20,50,150],"reward":2500},
+    {"stat":"followers","en":"Reach {n} followers","ar":"اجمع {n} متابع","tiers":[1000,5000,10000,50000,250000,1000000],"reward":1500},
+    {"stat":"staffHired","en":"Hire {n} employees","ar":"وظّف {n} موظفاً","tiers":[5,15,40,100],"reward":800},
+    {"stat":"upgradesBought","en":"Buy {n} upgrades","ar":"اشترِ {n} تطويراً","tiers":[5,20,50,96],"reward":1500},
+    {"stat":"miniMoments","en":"Nail {n} mini-moments","ar":"أتقن {n} لحظة مميزة","tiers":[5,50,200,1000],"reward":900},
+    {"stat":"hallsOwned","en":"Own {n} halls","ar":"امتلك {n} قاعات","tiers":[2,3,4,5,6],"reward":10000},
+    {"stat":"loansRepaid","en":"Repay {n} loans","ar":"سدّد {n} قروض","tiers":[1,5,15],"reward":1500},
+    {"stat":"campaigns","en":"Run {n} marketing campaigns","ar":"أطلق {n} حملات تسويقية","tiers":[1,10,50],"reward":800},
+    {"stat":"smallEvents","en":"Host {n} small hall events","ar":"استضف {n} مناسبات في القاعة الصغيرة","tiers":[1,10,50,200],"reward":1000},
+    {"stat":"plotsBuilt","en":"Build {n} businesses","ar":"ابنِ {n} مشاريع","tiers":[1,3,6,9],"reward":3000},
+    {"stat":"posts","en":"Post {n} times on Vowly","ar":"انشر {n} مرات على فاولي","tiers":[1,25,100],"reward":600},
+    {"stat":"cosmetics","en":"Own {n} cosmetics","ar":"امتلك {n} عناصر تجميلية","tiers":[1,10,26],"reward":2000},
+    {"stat":"chapters","en":"Complete {n} chapters","ar":"أكمل {n} فصول","tiers":[1,3,6,12],"reward":5000},
+    {"stat":"streak","en":"Log in {n} days in a row","ar":"سجّل الدخول {n} أيام متتالية","tiers":[3,7,30],"reward":1500},
+    {"stat":"referrals","en":"Refer {n} couples to another hall","ar":"حوّل {n} أزواج إلى قاعة أخرى","tiers":[1,10],"reward":1500},
+    {"stat":"returningCouples","en":"Welcome back {n} returning couples","ar":"استقبل {n} أزواج عائدين","tiers":[1,10,50],"reward":1500}
+  ],
+  "seasonal": [
+    {"id":"valentine","en":"Valentine's week","ar":"أسبوع الحب","month":2,"from":8,"to":14,"theme":"romantic","requestMult":1.4,"budgetMult":1.15},
+    {"id":"summer","en":"Summer festival","ar":"مهرجان الصيف","month":7,"from":1,"to":14,"theme":"beach","requestMult":1.5,"budgetMult":1.1},
+    {"id":"nye","en":"New Year's Eve gala","ar":"حفل ليلة رأس السنة","month":12,"from":24,"to":30,"theme":"glam","requestMult":1.3,"budgetMult":1.3},
+    {"id":"royal_week","en":"Royal wedding week","ar":"أسبوع الأعراس الملكية","rotating":true,"theme":"royal","requestMult":1.2,"budgetMult":1.15},
+    {"id":"masquerade","en":"Masquerade week","ar":"أسبوع الحفلات التنكرية","rotating":true,"theme":"fairytale","requestMult":1.2,"budgetMult":1.1},
+    {"id":"beach_season","en":"Beach season","ar":"موسم الشاطئ","rotating":true,"theme":"beach","requestMult":1.2,"budgetMult":1.05}
+  ],
+  "rotatingEveryWeeks":4,
+  "dailyWheel": [
+    {"kind":"money","value":500,"weight":30},
+    {"kind":"money","value":1500,"weight":20},
+    {"kind":"money","value":5000,"weight":6},
+    {"kind":"followers","value":200,"weight":18},
+    {"kind":"followers","value":800,"weight":8},
+    {"kind":"rep","value":2,"weight":10},
+    {"kind":"morale","value":10,"weight":8}
+  ],
+  "streakRewards":[300,500,800,1200,1800,2500,4000],
+  "leaderboardRivals":[
+    {"en":"Sunset Pavilion","ar":"جناح الغروب"},{"en":"Pearl Ballroom","ar":"قاعة اللؤلؤ"},{"en":"Ivy Court","ar":"ساحة اللبلاب"},{"en":"Golden Dove","ar":"الحمامة الذهبية"},{"en":"The Grand Palace","ar":"القصر الكبير"},{"en":"Moonlight Gardens","ar":"حدائق ضوء القمر"},{"en":"Crystal Terrace","ar":"التراس الكريستالي"}
+  ]
+}

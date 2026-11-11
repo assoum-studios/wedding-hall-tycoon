@@ -1,0 +1,9 @@
+<resources>
+    <style name="AppTheme" parent="@android:style/Theme.Material.Light.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/splash</item>
+        <item name="android:statusBarColor">#1f4fb8</item>
+        <item name="android:navigationBarColor">#1f4fb8</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+    <color name="splash">#7ab8f0</color>
+</resources>

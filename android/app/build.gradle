@@ -1,0 +1,43 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.assoumstudios.weddinghalltycoon'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.assoumstudios.weddinghalltycoon'
+        minSdk 26            // Android 8.0
+        targetSdk 35
+        versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '1')
+        versionName System.getenv('VERSION_NAME') ?: '1.0.0'
+    }
+    signingConfigs {
+        release {
+            def ks = System.getenv('KEYSTORE_FILE')
+            if (ks) {
+                storeFile file(ks)
+                storePassword System.getenv('KEYSTORE_PASSWORD')
+                keyAlias System.getenv('KEY_ALIAS')
+                keyPassword System.getenv('KEY_PASSWORD')
+            }
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            if (System.getenv('KEYSTORE_FILE')) signingConfig signingConfigs.release
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    bundle {
+        language { enableSplit = false } // keep English + Arabic in every install so the in-game switch works
+    }
+    androidResources { noCompress += ['js', 'css', 'woff2', 'woff', 'json', 'html'] }
+}
+
+dependencies {
+    implementation 'androidx.webkit:webkit:1.12.1'
+    implementation 'androidx.core:core:1.13.1'
+}

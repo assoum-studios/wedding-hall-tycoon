@@ -1,0 +1,524 @@
+{
+ "_note": "Core balance numbers. Edit freely; the game reads everything from here.",
+ "difficulties": {
+  "relaxed": {
+   "en": "Relaxed",
+   "ar": "مريح",
+   "startMoney": 25000,
+   "interestMult": 0.7,
+   "budgetMult": 1.15,
+   "problemMult": 0.7,
+   "victorStrength": 0.8,
+   "costMult": 0.9,
+   "repGainMult": 1.2
+  },
+  "normal": {
+   "en": "Normal",
+   "ar": "عادي",
+   "startMoney": 15000,
+   "interestMult": 1.0,
+   "budgetMult": 1.0,
+   "problemMult": 1.0,
+   "victorStrength": 1.0,
+   "costMult": 1.0,
+   "repGainMult": 1.0
+  },
+  "hard": {
+   "en": "Hard",
+   "ar": "صعب",
+   "startMoney": 9000,
+   "interestMult": 1.3,
+   "budgetMult": 0.92,
+   "problemMult": 1.3,
+   "victorStrength": 1.15,
+   "costMult": 1.1,
+   "repGainMult": 0.85
+  },
+  "legend": {
+   "en": "Legend",
+   "ar": "أسطوري",
+   "startMoney": 5000,
+   "interestMult": 1.6,
+   "budgetMult": 0.85,
+   "problemMult": 1.6,
+   "victorStrength": 1.3,
+   "costMult": 1.2,
+   "repGainMult": 0.7
+  }
+ },
+ "start": {
+  "reputation": 28,
+  "followers": 120,
+  "rosaDebt": 40000,
+  "rosaDebtWeeklyInterest": 0.005,
+  "rosaDebtMinWeekly": 1500,
+  "victorRating": 78
+ },
+ "time": {
+  "daysPerMonth": 30,
+  "startMonth": 3,
+  "requestExpireDays": 2,
+  "bookAheadMin": 2,
+  "bookAheadMax": 12,
+  "salaryEveryDays": 7,
+  "candidateRefreshDays": 3
+ },
+ "requests": {
+  "basePerDay": 1.3,
+  "repFactor": 0.012,
+  "followerFactor": 0.08,
+  "sizeFactor": 0.12,
+  "victorAheadMult": 0.85,
+  "maxOpen": 8,
+  "vipChance": 0.06
+ },
+ "guests": {
+  "min": 40,
+  "capacityShareMin": 0.45,
+  "capacityShareMax": 1.0
+ },
+ "pricing": {
+  "hallRentalBase": 1200,
+  "hallRentalPerSize": 900,
+  "decorBase": 900,
+  "decorPerGuest": 6,
+  "decorCostShare": 0.7,
+  "priceLevelMin": 0.8,
+  "priceLevelMax": 1.8,
+  "depositShare": 0.3,
+  "unhappyPayCut": 0.2,
+  "unhappyThreshold": 40,
+  "tipThreshold": 85,
+  "tipShare": 0.07,
+  "budgetFactor": 1.02
+ },
+ "menus": {
+  "buffet": {
+   "en": "Buffet",
+   "ar": "بوفيه مفتوح",
+   "price": 26,
+   "cost": 17
+  },
+  "three_course": {
+   "en": "Three-course dinner",
+   "ar": "عشاء من ثلاثة أطباق",
+   "price": 46,
+   "cost": 30
+  },
+  "luxury": {
+   "en": "Luxury banquet",
+   "ar": "مأدبة فاخرة",
+   "price": 82,
+   "cost": 54
+  }
+ },
+ "music": {
+  "live_band": {
+   "en": "Live band",
+   "ar": "فرقة حية",
+   "price": 1600,
+   "cost": 950,
+   "tags": [
+    "party",
+    "royal"
+   ]
+  },
+  "string_quartet": {
+   "en": "String quartet",
+   "ar": "رباعي وتري",
+   "price": 1200,
+   "cost": 700,
+   "tags": [
+    "classic",
+    "romantic",
+    "royal"
+   ]
+  },
+  "dj": {
+   "en": "DJ",
+   "ar": "منسق أغاني",
+   "price": 900,
+   "cost": 450,
+   "tags": [
+    "party",
+    "glam",
+    "beach"
+   ]
+  },
+  "acoustic": {
+   "en": "Acoustic",
+   "ar": "عزف صوتي",
+   "price": 700,
+   "cost": 380,
+   "tags": [
+    "boho",
+    "rustic",
+    "romantic"
+   ]
+  }
+ },
+ "themes": {
+  "classic": {
+   "en": "Classic white",
+   "ar": "أبيض كلاسيكي",
+   "colors": [
+    "#ffffff",
+    "#f3ead8",
+    "#d9c39a"
+   ],
+   "light": "#fff3dd"
+  },
+  "royal": {
+   "en": "Royal gold",
+   "ar": "ذهبي ملكي",
+   "colors": [
+    "#f2c94c",
+    "#7a1f3d",
+    "#fff1c9"
+   ],
+   "light": "#ffe2a0"
+  },
+  "boho": {
+   "en": "Garden boho",
+   "ar": "حديقة بوهيمية",
+   "colors": [
+    "#e9c9a8",
+    "#8fae7e",
+    "#f6e7d2"
+   ],
+   "light": "#ffe9c7"
+  },
+  "beach": {
+   "en": "Beach party",
+   "ar": "حفلة شاطئية",
+   "colors": [
+    "#4fc3d9",
+    "#fff3d6",
+    "#ff9e7a"
+   ],
+   "light": "#d9f6ff"
+  },
+  "glam": {
+   "en": "Modern glam",
+   "ar": "فخامة عصرية",
+   "colors": [
+    "#1d1d2b",
+    "#c0c0d0",
+    "#f5d77a"
+   ],
+   "light": "#e6e2ff"
+  },
+  "romantic": {
+   "en": "Romantic red",
+   "ar": "أحمر رومانسي",
+   "colors": [
+    "#c8102e",
+    "#ffd6de",
+    "#fff5f5"
+   ],
+   "light": "#ffd0d6"
+  },
+  "rustic": {
+   "en": "Rustic greenery",
+   "ar": "خضرة ريفية",
+   "colors": [
+    "#6b8f4e",
+    "#c79b6d",
+    "#f2ecdf"
+   ],
+   "light": "#fff0cc"
+  },
+  "fairytale": {
+   "en": "Fairytale",
+   "ar": "حكاية خيالية",
+   "colors": [
+    "#b9a4ff",
+    "#ffd1f0",
+    "#ffffff"
+   ],
+   "light": "#f1dcff"
+  }
+ },
+ "flowers": {
+  "white": {
+   "en": "White",
+   "ar": "أبيض",
+   "color": "#ffffff"
+  },
+  "red": {
+   "en": "Red",
+   "ar": "أحمر",
+   "color": "#d01c3a"
+  },
+  "pink": {
+   "en": "Pink",
+   "ar": "وردي",
+   "color": "#ff8fb6"
+  },
+  "peach": {
+   "en": "Peach",
+   "ar": "خوخي",
+   "color": "#ffb38a"
+  },
+  "lavender": {
+   "en": "Lavender",
+   "ar": "لافندر",
+   "color": "#b49cff"
+  },
+  "yellow": {
+   "en": "Yellow",
+   "ar": "أصفر",
+   "color": "#ffd84a"
+  },
+  "wild": {
+   "en": "Wild mix",
+   "ar": "تشكيلة برية",
+   "color": "#ff6fa0"
+  }
+ },
+ "lighting": {
+  "chandeliers": {
+   "en": "Crystal chandeliers",
+   "ar": "ثريات كريستال",
+   "color": "#fff1d0",
+   "tags": [
+    "classic",
+    "royal",
+    "glam"
+   ]
+  },
+  "fairy": {
+   "en": "Fairy lights",
+   "ar": "أضواء خيالية",
+   "color": "#ffe7a8",
+   "tags": [
+    "boho",
+    "fairytale",
+    "rustic",
+    "romantic"
+   ]
+  },
+  "lanterns": {
+   "en": "Lanterns",
+   "ar": "فوانيس",
+   "color": "#ffb35c",
+   "tags": [
+    "rustic",
+    "boho",
+    "beach"
+   ]
+  },
+  "led": {
+   "en": "Colorful LED",
+   "ar": "أضواء ملونة مضيئة",
+   "color": "#a070ff",
+   "tags": [
+    "party",
+    "glam",
+    "beach"
+   ]
+  },
+  "candle": {
+   "en": "Candlelight",
+   "ar": "ضوء الشموع",
+   "color": "#ffc070",
+   "tags": [
+    "romantic",
+    "classic",
+    "fairytale"
+   ]
+  }
+ },
+ "venues": {
+  "main": {
+   "en": "Main hall",
+   "ar": "القاعة الرئيسية",
+   "outdoor": false
+  },
+  "garden": {
+   "en": "Garden",
+   "ar": "الحديقة",
+   "outdoor": true,
+   "plot": "garden_venue",
+   "tags": [
+    "boho",
+    "rustic",
+    "fairytale"
+   ]
+  },
+  "pool": {
+   "en": "Pool terrace",
+   "ar": "تراس المسبح",
+   "outdoor": true,
+   "plot": "pool_terrace",
+   "tags": [
+    "beach",
+    "glam"
+   ]
+  },
+  "small": {
+   "en": "Small hall",
+   "ar": "القاعة الصغيرة",
+   "outdoor": false,
+   "plot": "small_hall",
+   "maxGuests": 120,
+   "tags": [
+    "classic",
+    "romantic"
+   ]
+  }
+ },
+ "personalities": {
+  "easygoing": {
+   "en": "Easygoing",
+   "ar": "متساهلان",
+   "budgetMult": 1.0,
+   "tolerance": 1.25,
+   "counterChance": 0.3,
+   "happyBase": 6,
+   "demandWeight": 0.7
+  },
+  "picky": {
+   "en": "Very picky",
+   "ar": "دقيقان جداً",
+   "budgetMult": 1.1,
+   "tolerance": 0.85,
+   "counterChance": 0.6,
+   "happyBase": -6,
+   "demandWeight": 1.5
+  },
+  "budget": {
+   "en": "On a budget",
+   "ar": "بميزانية محدودة",
+   "budgetMult": 0.72,
+   "tolerance": 1.0,
+   "counterChance": 0.8,
+   "happyBase": 0,
+   "demandWeight": 0.8
+  },
+  "wealthy": {
+   "en": "Wealthy",
+   "ar": "ثريان",
+   "budgetMult": 1.7,
+   "tolerance": 1.1,
+   "counterChance": 0.2,
+   "happyBase": -2,
+   "demandWeight": 1.2
+  },
+  "emotional": {
+   "en": "Emotional",
+   "ar": "عاطفيان",
+   "budgetMult": 1.05,
+   "tolerance": 1.0,
+   "counterChance": 0.4,
+   "happyBase": 3,
+   "demandWeight": 1.0
+  },
+  "traditional": {
+   "en": "Traditional",
+   "ar": "تقليديان",
+   "budgetMult": 1.0,
+   "tolerance": 1.0,
+   "counterChance": 0.5,
+   "happyBase": 0,
+   "demandWeight": 1.0
+  },
+  "party": {
+   "en": "Party lovers",
+   "ar": "محبان للحفلات",
+   "budgetMult": 1.1,
+   "tolerance": 1.05,
+   "counterChance": 0.35,
+   "happyBase": 2,
+   "demandWeight": 1.0
+  }
+ },
+ "happiness": {
+  "base": 34,
+  "themeMatch": 7,
+  "flowerMatch": 4,
+  "lightMatch": 4,
+  "musicMatch": 4,
+  "venueMatch": 3,
+  "perUpgradeLevel": 0.35,
+  "perDemand": 1.0,
+  "removedDemand": -5,
+  "staffShortPerRole": -3,
+  "miniMoment": 1.6,
+  "layoutMax": 6,
+  "menuBonus": {
+   "buffet": 0,
+   "three_course": 3,
+   "luxury": 6
+  },
+  "skipPenalty": 12,
+  "managerSkipReduction": 2.0,
+  "unattendedPenalty": 8,
+  "perfect": 95
+ },
+ "night": {
+  "lengthSeconds": {
+   "short": 80,
+   "normal": 140,
+   "long": 220
+  },
+  "phases": [
+   [
+    "arrive",
+    0.16
+   ],
+   [
+    "entrance",
+    0.1
+   ],
+   [
+    "dinner",
+    0.3
+   ],
+   [
+    "dancing",
+    0.3
+   ],
+   [
+    "farewell",
+    0.14
+   ]
+  ],
+  "problemsPerNight": 4.5,
+  "problemsPerExtraGuests": 0.006,
+  "miniMomentWindow": 4.0,
+  "managerWalkSeconds": 4,
+  "managerChanceSkill1": 0.47,
+  "managerChancePerSkill": 0.12,
+  "fixGainMult": 0.5
+ },
+ "reputation": {
+  "perHappinessPoint": 0.08,
+  "neutral": 62,
+  "maxGainPerWedding": 6,
+  "missedPaymentPenalty": 3,
+  "negativeBalancePenaltyPerDay": 0.5
+ },
+ "followers": {
+  "perWeddingPost": 0.9,
+  "boostCost": 500,
+  "boostFollowers": 700,
+  "smmPostEveryDays": 2
+ },
+ "upkeep": {
+  "baseDaily": 180,
+  "perUpgradeLevel": 14,
+  "perSizeLevel": 90,
+  "perPlotLevel": 22
+ },
+ "victor": {
+  "ratingDriftPerDay": 0.05,
+  "maxRating": 93,
+  "growthPerChapter": 1.6,
+  "base": 74
+ },
+ "monetization": {
+  "rewardedAdsEnabled": false,
+  "removeAdsEnabled": false
+ }
+}

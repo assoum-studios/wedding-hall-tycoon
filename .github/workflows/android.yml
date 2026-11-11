@@ -1,0 +1,122 @@
+name: Build signed Android App Bundle (.aab)
+
+on:
+  push:
+    branches: ['**']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install game dependencies
+        working-directory: web
+        run: npm ci
+
+      - name: Tests (types, English/Arabic tables, 30-day playthrough on every difficulty, save/reload)
+        working-directory: web
+        run: npm test
+
+      - name: Build the game
+        working-directory: web
+        run: npm run build
+
+      - name: Copy the game into the Android app
+        run: |
+          rm -rf android/app/src/main/assets/www
+          mkdir -p android/app/src/main/assets
+          cp -r web/dist android/app/src/main/assets/www
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: android-actions/setup-android@v3
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.10.2'
+
+      - name: Prepare the upload key
+        id: key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          if [ -n "$KEYSTORE_BASE64" ]; then
+            echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keys/upload.jks"
+            echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
+            echo "generated=false" >> "$GITHUB_OUTPUT"
+          else
+            # No upload key saved yet: create one so the bundle is signed, and hand it over as a private artifact.
+            PASS=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
+            keytool -genkeypair -v -keystore "$RUNNER_TEMP/keys/upload.jks" -storetype JKS -alias upload -keyalg RSA -keysize 4096 -validity 10000 \
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=Assoum Studios, O=Assoum Studios, C=LB"
+            echo "::add-mask::$PASS"
+            echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=upload" >> "$GITHUB_ENV"
+            echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
+            mkdir -p "$RUNNER_TEMP/upload-key"
+            cp "$RUNNER_TEMP/keys/upload.jks" "$RUNNER_TEMP/upload-key/upload.jks"
+            {
+              echo "KEEP THIS FILE PRIVATE. This is your Google Play UPLOAD key for Wedding Hall Owner Tycoon."
+              echo "Save these as GitHub repository secrets so every future build uses the same key:"
+              echo "  KEYSTORE_BASE64 = (the text inside upload.jks.base64.txt)"
+              echo "  KEYSTORE_PASSWORD = $PASS"
+              echo "  KEY_ALIAS = upload"
+              echo "  KEY_PASSWORD = $PASS"
+            } > "$RUNNER_TEMP/upload-key/README-KEEP-PRIVATE.txt"
+            base64 -w0 "$RUNNER_TEMP/keys/upload.jks" > "$RUNNER_TEMP/upload-key/upload.jks.base64.txt"
+            echo "generated=true" >> "$GITHUB_OUTPUT"
+          fi
+          echo "KEYSTORE_FILE=$RUNNER_TEMP/keys/upload.jks" >> "$GITHUB_ENV"
+
+      - name: Build the signed release bundle
+        working-directory: android
+        env:
+          VERSION_CODE: ${{ github.run_number }}
+          VERSION_NAME: 1.0.${{ github.run_number }}
+        run: gradle --no-daemon bundleRelease
+
+      - name: Verify the signature
+        run: |
+          AAB=android/app/build/outputs/bundle/release/app-release.aab
+          jarsigner -verify "$AAB" | tail -1
+          mkdir -p out
+          cp "$AAB" "out/WeddingHallOwnerTycoon-1.0.${{ github.run_number }}.aab"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: WeddingHallOwnerTycoon-aab
+          path: out/*.aab
+
+      - uses: actions/upload-artifact@v4
+        if: steps.key.outputs.generated == 'true'
+        with:
+          name: UPLOAD-KEY-keep-private
+          path: ${{ runner.temp }}/upload-key/
+          retention-days: 7
+
+      - name: Publish the web build (for testing in a browser)
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: web/dist
