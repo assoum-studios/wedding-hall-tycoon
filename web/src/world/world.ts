@@ -190,8 +190,12 @@ export class World {
 
   startNight(sim: NightSim) { this.stage.setShift(0); this.clearPeople(); this.mode = 'night'; this.night = new NightDirector(this, sim); }
   endNight() { this.night?.dispose(); this.night = null; this.setupDay(); }
-  startBuild() { this.mode = 'build'; this.clearPeople(); this.build = new BuildMode(this); this.rig.topDown = true; const { w, d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 0, 0), Math.max(w, d) * 1.25, 1.5, 0); }
-  endBuild() { this.build?.dispose(); this.build = null; this.rig.topDown = false; this.rebuildInterior(); this.setupDay(); this.viewHall(); }
+  startBuild() { this.mode = 'build'; this.clearPeople(); this.build = new BuildMode(this); this.rig.topDown = true; const { w, d } = hallDims(this.g.hall.size);
+    // Fit the whole floor on screen (portrait phones are narrow), leaving room for the item bar at the bottom.
+    const cam = this.stage.camera; const vh = Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2); const hh = vh * cam.aspect;
+    const dist = Math.max((w / 2 + 1) / hh, (d / 2 + 1) / (vh * 0.72)); this.stage.setShift(0.14);
+    this.rig.flyTo(new THREE.Vector3(0, 0, 0), dist, 1.5, 0); }
+  endBuild() { this.stage.setShift(0); this.build?.dispose(); this.build = null; this.rig.topDown = false; this.rebuildInterior(); this.setupDay(); this.viewHall(); }
 }
 
 // ======================================================================================
