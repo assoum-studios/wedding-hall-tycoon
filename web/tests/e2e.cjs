@@ -28,23 +28,27 @@ const path = require('path');
   for (let i = 0; i < 6; i++) { const n = await page.$('#meet-next'); if (!n) break; await n.click(); await page.waitForTimeout(300); }
   await click('#meet-invoice'); await page.waitForTimeout(600); await shot('10-invoice');
   await page.$eval('#price-level', (el) => { el.value = '110'; el.dispatchEvent(new Event('input')); });
-  await click('#inv-send'); await page.waitForTimeout(800);
-  const counter = await page.$('#inv-accept-counter'); if (counter) await counter.click();
-  await page.waitForTimeout(2500); await shot('11-booked');
+  await click('#inv-send');
+  const counter = await page.waitForSelector('#inv-accept-counter', { timeout: 5000 }).catch(() => null); if (counter) await counter.click({ force: true });
+  await page.waitForFunction(() => window.__app.g.s.bookings.length > 0, null, { timeout: 30000 });
+  await page.waitForFunction(() => !document.querySelector('.backdrop'), null, { timeout: 30000 });
+  await page.waitForTimeout(1500); await shot('11-booked');
   // Plan it
-  await click('#btn-bookings'); await page.click('.tab:nth-child(2)'); await page.waitForTimeout(400);
-  const planBtn = await page.$('[data-plan]'); if (planBtn) { await planBtn.click(); await page.waitForTimeout(800); await shot('12-planning'); await click('#plan-confirm'); }
-  await page.waitForTimeout(500); const close = await page.$('.modal .close'); if (close) await close.click(); await page.waitForTimeout(500);
+  await click('#btn-bookings'); await page.waitForSelector('.modal .tab:nth-child(2)'); await page.click('.modal .tab:nth-child(2)', { force: true });
+  await click('[data-plan]', 20000); await page.waitForSelector('#plan-confirm', { timeout: 20000 }); await page.waitForTimeout(800); await shot('12-planning'); await click('#plan-confirm');
+  await page.waitForFunction(() => window.__app.g.s.bookings[0].plan.planned, null, { timeout: 20000 });
+  await page.waitForTimeout(500); const close = await page.$('.modal .close'); if (close) await close.click({ force: true }); await page.waitForFunction(() => !document.querySelector('.backdrop'), null, { timeout: 20000 });
   // Advance days until the wedding
   for (let i = 0; i < 6; i++) {
-    const news = await page.$('[data-choice="0"]'); if (news) { await news.click(); await page.waitForTimeout(400); }
-    const label = await page.$eval('#btn-main', (b) => b.className);
-    if (label.includes('green')) break;
-    await click('#btn-main'); await page.waitForTimeout(1200);
+    const news = await page.$('[data-choice="0"]'); if (news) { await news.click({ force: true }); await page.waitForTimeout(800); }
+    const callBtn = await page.$('.call .btn.red'); if (callBtn) { await callBtn.click({ force: true }); await page.waitForTimeout(400); }
+    if (await page.evaluate(() => !!window.__app.g.s.bookings.find((b) => b.date === window.__app.g.s.day))) break;
+    const d0 = await page.evaluate(() => window.__app.g.s.day);
+    await click('#btn-main'); await page.waitForFunction((d) => window.__app.g.s.day > d, d0, { timeout: 30000 }); await page.waitForTimeout(800);
   }
   const news2 = await page.$('[data-choice="0"]'); if (news2) { await news2.click(); await page.waitForTimeout(400); }
   await shot('13-wedding-day');
-  await click('#btn-main'); await page.waitForTimeout(800); await shot('14-pre-night');
+  await click('#btn-main'); await page.waitForSelector('#btn-begin', { timeout: 20000 }); await page.waitForTimeout(800); await shot('14-pre-night');
   await page.evaluate(() => { window.__app.g.s.settings.weddingLength = 'short'; });
   await click('#btn-begin'); await page.waitForTimeout(4000); await shot('15-night-arrive');
   // speed up and tap problems/moments as they appear

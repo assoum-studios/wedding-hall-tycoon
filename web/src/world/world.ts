@@ -152,7 +152,24 @@ export class World {
   // ---------------- Meeting scene at the reception desk ----------------
   setupMeeting(groom: Look, bride: Look) {
     this.mode = 'meeting'; this.clearPeople(); this.stage.setDayTime(0.15);
-    const base = OFFICE_POS.clone().add(new THREE.Vector3(0, 0, 9));
+    // A private office room away from the street, so nothing blocks the view.
+    const base = new THREE.Vector3(0, 0, -250);
+    const room = new THREE.Group(); room.position.copy(base);
+    room.add(Props.mesh(new THREE.BoxGeometry(12, 0.1, 10), MAT.wood, 0, 0.05, 0));
+    room.add(Props.mesh(new THREE.BoxGeometry(12, 5, 0.3), MAT.wallTint, 0, 2.5, -3.5));
+    for (const sx of [-1, 1]) room.add(Props.mesh(new THREE.BoxGeometry(0.3, 5, 10), MAT.wallTint, sx * 6, 2.5, 0.5));
+    room.add(Props.mesh(new THREE.BoxGeometry(12, 0.3, 0.35), MAT.gold, 0, 4.9, -3.3)); room.add(Props.mesh(new THREE.BoxGeometry(12, 0.15, 0.32), MAT.gold, 0, 1.0, -3.3));
+    const win = Props.mesh(new THREE.BoxGeometry(2.4, 2.2, 0.05), new THREE.MeshStandardMaterial({ color: '#bfe3ff', emissive: '#9fd0ff', emissiveIntensity: 0.6 }), 3.2, 2.6, -3.32); room.add(win);
+    room.add(Props.mesh(new THREE.TorusGeometry(1.2, 0.08, 6, 16, Math.PI), MAT.gold, 3.2, 3.7, -3.3));
+    const shelf = new THREE.Group(); shelf.position.set(-3.6, 0, -3.1); shelf.add(Props.mesh(new THREE.BoxGeometry(2.2, 2.6, 0.5), MAT.wood, 0, 1.3, 0));
+    for (let r = 0; r < 3; r++) for (let i = 0; i < 7; i++) shelf.add(Props.mesh(new THREE.BoxGeometry(0.18, 0.5, 0.35), [MAT.red, MAT.leafDark, MAT.goldSoft, MAT.dark][(i + r) % 4], -0.85 + i * 0.27, 0.55 + r * 0.8, 0.1));
+    room.add(shelf);
+    const frame = Props.mesh(new THREE.BoxGeometry(1.1, 1.3, 0.06), MAT.gold, -0.2, 3.2, -3.3); room.add(frame);
+    room.add(Props.mesh(new THREE.BoxGeometry(0.9, 1.1, 0.02), MAT.roseRed, -0.2, 3.2, -3.26));
+    for (const x of [-5, 5]) { const pl = Props.plant(); pl.scale.setScalar(1.4); pl.position.set(x, 0, -2.6); room.add(pl); }
+    const rug = Props.mesh(new THREE.BoxGeometry(5, 0.02, 3.6), MAT.carpet, 0, 0.11, 0.2); room.add(rug);
+    const lamp = new THREE.PointLight('#ffe2b0', 12, 14, 1.5); lamp.position.set(0, 3.8, 0.5); room.add(lamp);
+    this.extra.add(room);
     const desk = new THREE.Group(); desk.position.copy(base);
     desk.add(Props.mesh(new THREE.BoxGeometry(2.6, 0.9, 1.0), MAT.wood, 0, 0.45, 0)); desk.add(Props.mesh(new THREE.BoxGeometry(2.8, 0.06, 1.2), MAT.marble, 0, 0.93, 0)); desk.add(Props.mesh(new THREE.BoxGeometry(2.62, 0.08, 1.02), MAT.gold, 0, 0.1, 0));
     const vase = Props.plant(); vase.scale.setScalar(0.5); vase.position.set(-1.0, 0.95, 0); desk.add(vase);
@@ -166,7 +183,7 @@ export class World {
     const o = this.addPerson(this.g.s.owner, base.clone().add(new THREE.Vector3(0, 0, -1.0)), 0, 'owner'); o.anim = 'sitTalk';
     const gp = this.addPerson(groom, base.clone().add(new THREE.Vector3(-0.55, 0, 1.15)), Math.PI, 'guest'); gp.anim = 'sitTalk';
     const bp = this.addPerson(bride, base.clone().add(new THREE.Vector3(0.55, 0, 1.15)), Math.PI, 'guest'); bp.anim = 'sit';
-    this.rig.flyTo(base.clone().add(new THREE.Vector3(0.0, 0.6, 0.2)), 4.6, 0.32, 0.55); this.rig.snap(); this.rig.locked = true;
+    this.rig.flyTo(base.clone().add(new THREE.Vector3(0.0, 0.7, 0.1)), 4.4, 0.3, 0.5); this.rig.snap(); this.rig.locked = true;
     return { groom: gp, bride: bp, owner: o };
   }
   endMeeting() { this.extra.clear(); this.rig.locked = false; this.setupDay(); this.viewHall(true); }

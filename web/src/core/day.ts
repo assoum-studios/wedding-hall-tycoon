@@ -29,7 +29,7 @@ export function startGame(g: Game) {
   refreshCandidates(g);
   // The tutorial couple and one more request.
   const r = genRequest(g, 0, {}); r.personality = 'easygoing'; r.guests = 80; r.date = 2; r.expires = 3; r.theme = 'boho'; r.demands = r.demands.slice(0, 3);
-  r.budget = Math.round(r.budget * 1.15); s.requests.push(r);
+  r.budget = Math.round(r.budget * 1.35); s.requests.push(r); // the tutorial couple is forgiving on price
   s.requests.push(genRequest(g, 0, {}));
   ensureWeekly(g);
   g.message(['Nadia', 'نادية'], ["Welcome! I'm Nadia, I worked with Rosa for twenty years. I'll show you everything.", 'أهلاً بك! أنا نادية، عملت مع روزا عشرين عاماً. سأريك كل شيء.'], 'story');
