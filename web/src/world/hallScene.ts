@@ -249,6 +249,12 @@ export class HallView {
     for (let i = 0; i < 8; i++) for (const s of [-1, 1]) { const r = P.roseBush(); r.position.set(s * (7 + (i % 2) * 1.2), 0, d / 2 + 2 + i * 1.6); plaza.add(r); }
     for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const t = P.tree('cypress', 1.1); t.position.set(s * 10, 0, d / 2 + 3 + i * 5); plaza.add(t); }
     const f = P.fountain(); f.scale.setScalar(1.6); f.position.set(16, 0, d / 2 + 10); plaza.add(f);
+    // Lawns with low hedges and lamp posts so the block feels like palace gardens, not an empty lot.
+    const lawn = (x: number, z: number, w: number, dd: number) => { const m = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(w, dd), 4), MAT.grass); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.035, z); m.receiveShadow = true; plaza.add(m);
+      for (const s of [-1, 1]) { plaza.add(P.mesh(new THREE.BoxGeometry(w, 0.7, 0.7), MAT.leafDark, x, 0.35, z + s * (dd / 2 - 0.35))); plaza.add(P.mesh(new THREE.BoxGeometry(0.7, 0.7, dd), MAT.leafDark, x + s * (w / 2 - 0.35), 0.35, z)); } };
+    const hw = hallDims(h.size).w;
+    lawn(-16, d / 2 + 14, 9, 10); lawn(hw / 2 + 24, d / 2 + 26, 14, 10); lawn(-(hw / 2 + 12), -8, 14, d + 6); lawn(hw / 2 + 12, -8, 14, d + 6);
+    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const l = P.lamp(); l.scale.setScalar(1.8); l.position.set(s * 4.2, 0, d / 2 + 8 + i * 6); plaza.add(l); }
     const limo = P.car('#f7f7f7', true); limo.position.set(6, 0, S - rw / 2 - 4); limo.rotation.y = Math.PI / 2; plaza.add(limo);
     // planters along the block
     for (let x = -70; x <= 70; x += 14) if (Math.abs(x) > 20) { const t = P.tree(atmo === 'desert' ? 'palm' : atmo === 'mountain' ? 'snowpine' : 'round', 0.9); t.position.set(x, 0, S - rw / 2 - 5); plaza.add(t); }
