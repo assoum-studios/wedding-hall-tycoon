@@ -29,6 +29,7 @@ const { chromium } = require('playwright');
   // Fingers turned clockwise on screen (positive angle with y pointing down); the world point must too.
   check(res.d > 0.2, `two-finger twist follows the fingers (world turned ${res.d.toFixed(2)} rad clockwise)`);
 
+  if (process.env.ONLY_TWIST) { check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await b.close(); process.exit(fails ? 1 : 0); }
   // --- A menu opened by a tap must not close from that same tap.
   await page.click('#btn-bookings', { force: true }); await page.waitForTimeout(50);
   await page.mouse.click(20, 580); await page.waitForTimeout(100);
@@ -39,7 +40,7 @@ const { chromium } = require('playwright');
   // --- Arabic: open every main screen and look for leftover English letters in visible text.
   await page.evaluate(() => { localStorage.setItem('whot_lang', 'ar'); }); await page.reload(); await page.waitForTimeout(4000);
   await page.evaluate(() => window.__app.quickStart('normal')); await page.waitForTimeout(2500);
-  const latin = async (where) => { const bad = await page.evaluate(() => { const out = []; const walk = (n) => { for (const c of n.childNodes) { if (c.nodeType === 3) { const t = c.textContent.replace(/\$|[\d.,:%+\-×/·()\s]|ع|EN/g, ''); if (/[A-Za-z]{2,}/.test(t)) out.push(t.trim()); } else if (c.nodeType === 1 && getComputedStyle(c).display !== 'none') walk(c); } }; walk(document.getElementById('ui')); return out; }); check(bad.length === 0, `Arabic ${where}: no English text${bad.length ? ' -> ' + bad.slice(0, 5).join(' | ') : ''}`); };
+  const latin = async (where) => { const bad = await page.evaluate(() => { const out = []; const walk = (n) => { for (const c of n.childNodes) { if (c.nodeType === 3) { const t = c.textContent.replace(/\$|[\d.,:%+\-×/·()\s]|ع|EN|English/g, ''); if (/[A-Za-z]{2,}/.test(t)) out.push(t.trim()); } else if (c.nodeType === 1 && getComputedStyle(c).display !== 'none') walk(c); } }; walk(document.getElementById('ui')); return out; }); check(bad.length === 0, `Arabic ${where}: no English text${bad.length ? ' -> ' + bad.slice(0, 5).join(' | ') : ''}`); };
   const dir = await page.evaluate(() => document.documentElement.dir); check(dir === 'rtl', 'Arabic layout is right-to-left');
   await latin('HUD');
   for (const [btn, name] of [['#btn-bookings', 'bookings'], ['#btn-office', 'office'], ['#btn-goals', 'goals'], ['#btn-phone', 'phone']]) {

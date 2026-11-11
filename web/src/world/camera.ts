@@ -19,7 +19,7 @@ export class CameraRig {
   }
   private clampDist(d: number) { return Math.max(this.minDist, Math.min(this.maxDist, d)); }
   private down(e: PointerEvent) {
-    this.el.setPointerCapture?.(e.pointerId); this.button = e.button;
+    try { this.el.setPointerCapture?.(e.pointerId); } catch { /* synthetic or already-released pointer */ } this.button = e.button;
     this.pointers.set(e.pointerId, { x: e.clientX, y: e.clientY, sx: e.clientX, sy: e.clientY, t: performance.now() });
     if (this.pointers.size === 1) this.moved = false; this.last = this.gesture();
   }
