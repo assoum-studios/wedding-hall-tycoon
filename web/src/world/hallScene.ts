@@ -30,7 +30,7 @@ export class HallView {
   dance: THREE.Mesh | null = null; doors: THREE.Object3D[] = []; doorOpen = 0; doorTarget = 0;
   chandeliers: THREE.Object3D[] = []; lights: THREE.PointLight[] = []; spot: THREE.SpotLight[] = []; water: THREE.Mesh[] = []; glowWindows: THREE.MeshStandardMaterial[] = [];
   pickables: THREE.Object3D[] = []; traffic: Traffic | null = null; interiorMode = true; billboard: THREE.Object3D | null = null; officeObj: THREE.Object3D | null = null;
-  hallIdx = -1; night = 0; party = 0; fireworks: THREE.Points | null = null; fwT = -1;
+  hallIdx = -1; night = 0; party = 0; flicker = 0; fireworks: THREE.Points | null = null; fwT = -1;
   constructor(public g: Game, public scene: THREE.Scene) { applyTextures(); scene.add(this.root); }
 
   build(hallIdx: number) {
@@ -61,9 +61,9 @@ export class HallView {
     // Walls (each a group so the camera-facing ones can be cut away)
     const mkWall = (len: number, normal: THREE.Vector3, pos: THREE.Vector3, rotY: number, front = false) => {
       const grp = new THREE.Group(); grp.position.copy(pos); grp.rotation.y = rotY;
-      const nWin = Math.max(2, Math.floor(len / 4.2)); const segW = len / nWin;
+      let nWin = Math.max(2, Math.floor(len / 4.2)); if (front && nWin % 2 === 0) nWin += 1; const segW = len / nWin;
       for (let i = 0; i < nWin; i++) {
-        const x = -len / 2 + segW * (i + 0.5); const door = front && Math.abs(x) < segW * 0.6;
+        const x = -len / 2 + segW * (i + 0.5); const door = front && i === (nWin - 1) / 2;
         // lower wall
         grp.add(P.mesh(new THREE.BoxGeometry(segW, door ? 0.01 : 1.2, T), outerMat, x, door ? 0 : 0.6, 0));
         // pillars between windows
@@ -254,7 +254,7 @@ export class HallView {
       for (const s of [-1, 1]) { plaza.add(P.mesh(new THREE.BoxGeometry(w, 0.7, 0.7), MAT.leafDark, x, 0.35, z + s * (dd / 2 - 0.35))); plaza.add(P.mesh(new THREE.BoxGeometry(0.7, 0.7, dd), MAT.leafDark, x + s * (w / 2 - 0.35), 0.35, z)); } };
     const hw = hallDims(h.size).w;
     lawn(-16, d / 2 + 14, 9, 10); lawn(hw / 2 + 24, d / 2 + 26, 14, 10); lawn(-(hw / 2 + 12), -8, 14, d + 6); lawn(hw / 2 + 12, -8, 14, d + 6);
-    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const l = P.lamp(); l.scale.setScalar(1.8); l.position.set(s * 4.2, 0, d / 2 + 8 + i * 6); plaza.add(l); }
+    for (const s of [-1, 1]) for (let i = 0; i < 4; i++) { const l = P.streetLight(); l.scale.setScalar(0.75); l.rotation.y = s > 0 ? -Math.PI / 2 : Math.PI / 2; l.position.set(s * 4.4, 0, d / 2 + 8 + i * 6); plaza.add(l); }
     const limo = P.car('#f7f7f7', true); limo.position.set(6, 0, S - rw / 2 - 4); limo.rotation.y = Math.PI / 2; plaza.add(limo);
     // planters along the block
     for (let x = -70; x <= 70; x += 14) if (Math.abs(x) > 20) { const t = P.tree(atmo === 'desert' ? 'palm' : atmo === 'mountain' ? 'snowpine' : 'round', 0.9); t.position.set(x, 0, S - rw / 2 - 5); plaza.add(t); }
@@ -353,7 +353,10 @@ export class HallView {
     for (const w of this.walls) w.obj.visible = !interiorMode || w.n.dot(cd) > 0.15;
     for (const m of this.glowWindows) m.emissiveIntensity = this.night * 0.9;
     MAT.bulb.emissiveIntensity = 0.8 + this.night * 1.6; MAT.crystal.emissiveIntensity = 0.25 + this.night * 0.6;
-    for (const l of this.lights) l.intensity = 6 + this.night * 30;
+    // Problems you can see: a power cut darkens the hall, flickering lights stutter.
+    const fk = this.flicker === 2 ? 0.12 : this.flicker === 1 ? (Math.random() < 0.35 ? 0.25 : 1) : 1;
+    for (const l of this.lights) l.intensity = (6 + this.night * 30) * fk;
+    MAT.bulb.emissiveIntensity *= fk; MAT.crystal.emissiveIntensity *= fk;
     for (const s of this.spot) { s.intensity = this.party * 60; s.target.position.set(Math.sin(t * 0.8 + s.position.x) * 6, 0, Math.cos(t * 0.6) * 4); }
     if (this.dance) { const u = (this.dance.material as THREE.ShaderMaterial).uniforms; u.t.value = t; u.on.value += (this.party - u.on.value) * Math.min(1, dt * 2); }
     this.doorOpen += (this.doorTarget - this.doorOpen) * Math.min(1, dt * 3);

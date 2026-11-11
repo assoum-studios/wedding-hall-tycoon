@@ -38,7 +38,7 @@ export function interview(g: Game, c: Candidate) {
 export function hire(g: Game, c: Candidate, hall = g.s.activeHall): Employee {
   const e: Employee = { id: g.uid('e'), name: c.name, role: c.role, skill: c.skill, trait: c.trait, wage: c.wage, morale: STAFF.morale.start + (c.trait === 'loyal' ? 10 : 0),
     weekWeddings: 0, hall, look: c.look, hiredDay: g.s.day };
-  if (c.role === 'manager') { e.toggles = { run: true, fix: true, plan: true, accept: false }; if (!g.s.halls[hall].managerId) g.s.halls[hall].managerId = e.id; }
+  if (c.role === 'manager') { e.toggles = { run: true, fix: true, plan: true, accept: hall !== g.s.activeHall || g.s.halls.filter((x) => x.owned).length > 1 }; if (!g.s.halls[hall].managerId) g.s.halls[hall].managerId = e.id; }
   g.s.staff.push(e); g.s.candidates = g.s.candidates.filter((x) => x.id !== c.id);
   g.stat('staffHired'); g.weekStat('hire');
   g.emit('staff'); return e;
@@ -53,7 +53,7 @@ export function fire(g: Game, id: string) {
 export function assignSpareManager(g: Game, hallIdx: number) {
   const used = new Set(g.s.halls.map((h) => h.managerId).filter(Boolean));
   const spare = g.s.staff.filter((e) => e.role === 'manager' && !used.has(e.id)).sort((a, b) => b.skill - a.skill)[0];
-  if (spare) { spare.hall = hallIdx; g.s.halls[hallIdx].managerId = spare.id; }
+  if (spare) { spare.hall = hallIdx; g.s.halls[hallIdx].managerId = spare.id; if (spare.toggles && hallIdx !== g.s.activeHall) spare.toggles.accept = true; }
   return spare ?? null;
 }
 export function setManager(g: Game, hallIdx: number, id: string) {

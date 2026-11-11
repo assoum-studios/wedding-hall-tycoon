@@ -63,32 +63,24 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/keys"
           if [ -n "$KEYSTORE_BASE64" ]; then
+            # Your private Play upload key, stored as encrypted GitHub secrets.
             echo "$KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/keys/upload.jks"
             echo "KEYSTORE_PASSWORD=$KEYSTORE_PASSWORD" >> "$GITHUB_ENV"
             echo "KEY_ALIAS=$KEY_ALIAS" >> "$GITHUB_ENV"
             echo "KEY_PASSWORD=$KEY_PASSWORD" >> "$GITHUB_ENV"
-            echo "generated=false" >> "$GITHUB_OUTPUT"
+            echo "suffix=" >> "$GITHUB_OUTPUT"
           else
-            # No upload key saved yet: create one so the bundle is signed, and hand it over as a private artifact.
-            PASS=$(openssl rand -base64 24 | tr -d '/+=' | cut -c1-24)
-            keytool -genkeypair -v -keystore "$RUNNER_TEMP/keys/upload.jks" -storetype JKS -alias upload -keyalg RSA -keysize 4096 -validity 10000 \
-              -storepass "$PASS" -keypass "$PASS" -dname "CN=Assoum Studios, O=Assoum Studios, C=LB"
+            # No secrets yet: sign with a throwaway key so the bundle can still be tested.
+            # This key is never saved or published (the repository is public). Do not upload this build to Play.
+            PASS=$(openssl rand -hex 16)
             echo "::add-mask::$PASS"
+            keytool -genkeypair -keystore "$RUNNER_TEMP/keys/upload.jks" -storetype JKS -alias throwaway -keyalg RSA -keysize 2048 -validity 30 \
+              -storepass "$PASS" -keypass "$PASS" -dname "CN=Throwaway test key" > /dev/null
             echo "KEYSTORE_PASSWORD=$PASS" >> "$GITHUB_ENV"
-            echo "KEY_ALIAS=upload" >> "$GITHUB_ENV"
+            echo "KEY_ALIAS=throwaway" >> "$GITHUB_ENV"
             echo "KEY_PASSWORD=$PASS" >> "$GITHUB_ENV"
-            mkdir -p "$RUNNER_TEMP/upload-key"
-            cp "$RUNNER_TEMP/keys/upload.jks" "$RUNNER_TEMP/upload-key/upload.jks"
-            {
-              echo "KEEP THIS FILE PRIVATE. This is your Google Play UPLOAD key for Wedding Hall Owner Tycoon."
-              echo "Save these as GitHub repository secrets so every future build uses the same key:"
-              echo "  KEYSTORE_BASE64 = (the text inside upload.jks.base64.txt)"
-              echo "  KEYSTORE_PASSWORD = $PASS"
-              echo "  KEY_ALIAS = upload"
-              echo "  KEY_PASSWORD = $PASS"
-            } > "$RUNNER_TEMP/upload-key/README-KEEP-PRIVATE.txt"
-            base64 -w0 "$RUNNER_TEMP/keys/upload.jks" > "$RUNNER_TEMP/upload-key/upload.jks.base64.txt"
-            echo "generated=true" >> "$GITHUB_OUTPUT"
+            echo "suffix=-TEST-KEY-not-for-Play" >> "$GITHUB_OUTPUT"
+            echo "::warning::Signed with a throwaway key. Add the KEYSTORE_BASE64, KEYSTORE_PASSWORD, KEY_ALIAS and KEY_PASSWORD secrets to sign with your Play upload key."
           fi
           echo "KEYSTORE_FILE=$RUNNER_TEMP/keys/upload.jks" >> "$GITHUB_ENV"
 
@@ -104,19 +96,12 @@ jobs:
           AAB=android/app/build/outputs/bundle/release/app-release.aab
           jarsigner -verify "$AAB" | tail -1
           mkdir -p out
-          cp "$AAB" "out/WeddingHallOwnerTycoon-1.0.${{ github.run_number }}.aab"
+          cp "$AAB" "out/WeddingHallOwnerTycoon-1.0.${{ github.run_number }}${{ steps.key.outputs.suffix }}.aab"
 
       - uses: actions/upload-artifact@v4
         with:
           name: WeddingHallOwnerTycoon-aab
           path: out/*.aab
-
-      - uses: actions/upload-artifact@v4
-        if: steps.key.outputs.generated == 'true'
-        with:
-          name: UPLOAD-KEY-keep-private
-          path: ${{ runner.temp }}/upload-key/
-          retention-days: 7
 
       - name: Publish the web build (for testing in a browser)
         uses: actions/upload-artifact@v4

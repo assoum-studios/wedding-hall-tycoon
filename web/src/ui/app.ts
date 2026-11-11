@@ -56,6 +56,12 @@ export class App {
     this.refresh(); this.persist(); playMusic('day');
     if (this.g.s.pendingNews && this.g.s.tutorial.done) setTimeout(() => showNews(this), 600);
   }
+  /** Used by automated tests: start a fresh game without going through the menus. */
+  quickStart(diff: 'relaxed' | 'normal' | 'hard' | 'legend' = 'normal', skipTutorial = true) {
+    document.querySelectorAll('.screen, .custom, .story').forEach((e) => e.remove());
+    const s = newGameState(0, diff, defaultOwner('m'), ''); s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = this.g.s.settings.quality;
+    this.startNew(0, s, true); if (skipTutorial) this.tutorial?.finish();
+  }
   bindGame() {
     const g = this.g;
     g.on('toast', (p: any) => toast(p.text, p.kind));

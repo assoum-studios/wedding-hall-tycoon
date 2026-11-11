@@ -112,7 +112,7 @@ export class World {
   update(dt: number, t: number) {
     this.rig.update(dt);
     const interior = this.mode === 'night' || this.mode === 'build' || this.rig.interior;
-    this.view.update(dt, t, this.stage.camera, interior && this.mode !== 'title' && this.mode !== 'custom');
+    this.view.update(dt, t, this.stage.camera, interior && this.mode !== 'title' && this.mode !== 'custom' && this.mode !== 'story');
     this.night?.update(dt, t);
     const cam = this.stage.camera.position; const lodBase = this.stage.quality === 'smooth' ? 2 : 1;
     for (const p of this.people) { const d = p.pos.distanceTo(cam); p.update(dt, t, d > 45 ? 3 * lodBase : d > 25 ? 2 * lodBase : lodBase); }
@@ -237,6 +237,8 @@ export class NightDirector {
     // Day turns to sunset then night.
     const prog = sim.t / sim.duration; this.dayT = Math.min(1, 0.2 + prog * 1.3); w.stage.setDayTime(this.dayT);
     w.view.setMood(Math.max(0, (this.dayT - 0.45) / 0.55), ph === 'dancing' ? 1 : ph === 'farewell' ? 0.4 : 0);
+    const act = sim.problems.filter((p) => p.state === 'active').map((p) => p.id);
+    w.view.flicker = act.includes('power_cut') ? 2 : act.includes('flickering_lights') ? 1 : 0;
     // Problems: the manager walks over and fixes them.
     for (const p of sim.problems) {
       if (p.state === 'active' && !this.problemsShown.has(p.uid)) { this.problemsShown.set(p.uid, this.problemSpot(p)); }
@@ -312,7 +314,7 @@ export class NightDirector {
   }
   /** Perfect night: slow-motion confetti and a close-up of the couple. */
   celebrate() { const p = this.groom.pos.clone().add(this.bride.pos).multiplyScalar(0.5); this.w.rig.flyTo(p.setY(1), 4.5, 0.2); }
-  dispose() { this.w.view.doorTarget = 0; }
+  dispose() { this.w.view.doorTarget = 0; this.w.view.flicker = 0; }
 }
 
 // ======================================================================================

@@ -65,9 +65,9 @@ export class Stage {
   }
   setQuality(q: Quality, settings?: Settings) {
     this.quality = q; if (settings) this.settings = settings; const Q = QUALITY[q];
-    const pr = Math.min(window.devicePixelRatio || 1, Q.pixelRatioMax) * Q.scale;
+    const pr = this.fast ? 0.5 : Math.min(window.devicePixelRatio || 1, Q.pixelRatioMax) * Q.scale;
     this.renderer.setPixelRatio(pr);
-    const shadows = this.settings?.shadows ?? true;
+    const shadows = !this.fast && (this.settings?.shadows ?? true);
     this.renderer.shadowMap.enabled = shadows; this.sun.castShadow = shadows;
     this.sun.shadow.mapSize.set(Q.shadowMap, Q.shadowMap); this.sun.shadow.map?.dispose(); (this.sun.shadow as any).map = null;
     const glow = (this.settings?.glow ?? true) && Q.bloom;
@@ -105,12 +105,14 @@ export class Stage {
     this.sun.target.position.copy(target); const sc = this.sun.shadow.camera as THREE.OrthographicCamera;
     sc.left = -radius; sc.right = radius; sc.top = radius; sc.bottom = -radius; sc.updateProjectionMatrix(); this.setDayTime(this.dayT);
   }
+  /** ?fast in the URL (automated tests on software rendering): fewer frames, bigger time steps. */
+  fast = typeof location !== 'undefined' && location.search.includes('fast');
   frame() {
-    const now = performance.now(); const dt = Math.min(0.1, (now - this.last) / 1000); this.last = now; this.time += dt;
+    const now = performance.now(); const dt = Math.min(this.fast ? 1.0 : 0.1, (now - this.last) / 1000); this.last = now; this.time += dt;
     this.fpsAcc += dt; this.fpsN++; if (this.fpsAcc > 1) { this.fps = this.fpsN / this.fpsAcc; this.fpsAcc = 0; this.fpsN = 0; }
     for (const u of this.updaters) u(dt, this.time);
     this.sky.position.copy(this.camera.position);
     if (this.composer) this.composer.render(); else this.renderer.render(this.scene, this.camera);
   }
-  start() { const loop = () => { this.frame(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+  start() { if (this.fast) { const loop = () => { this.frame(); setTimeout(loop, 700); }; setTimeout(loop, 100); return; } const loop = () => { this.frame(); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
 }
