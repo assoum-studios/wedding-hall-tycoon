@@ -11,6 +11,7 @@ export function reserved(w: number, d: number) {
   const cx = Math.floor(w / 2);
   for (let z = d - 3; z < d; z++) for (let x = cx - 2; x < cx + 2; x++) cells.add(x + ',' + z);
   for (let z = 0; z < 2; z++) for (let x = 0; x < 2; x++) cells.add(x + ',' + z);
+  for (let z = d - 2; z < d; z++) for (let x = w - 3; x < w; x++) cells.add(x + ',' + z); // gift table by the entrance
   return cells;
 }
 

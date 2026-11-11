@@ -57,7 +57,7 @@ export class World {
       this.dayChore(p, i);
     });
     // a few visitors walking on the plaza
-    for (let i = 0; i < 4; i++) { const p = this.addPerson(randomLook(this.rng), new THREE.Vector3(-20 + i * 12, 0, STREET_Z - 8), 0, 'visitor'); this.wander(p); }
+    const peds = this.stage.quality === 'smooth' ? 6 : 12; for (let i = 0; i < peds; i++) { const p = this.addPerson(randomLook(this.rng), new THREE.Vector3(-60 + i * 11, 0, STREET_Z - 6.5), 0, 'visitor'); p.data.side = i % 2; this.wander(p); }
     void w;
   }
   private dayChore(p: Person, i: number) {
@@ -77,7 +77,7 @@ export class World {
       default: p.walkTo(nav, this.randomFree(), 'phone', null, () => setTimeout(go, 6000));
     }
   }
-  private wander(p: Person) { const tgt = new THREE.Vector3(-60 + vrand() * 120, 0, STREET_Z - 7 + vrand() * 2); p.walkTo(null, tgt, 'idle', null, () => setTimeout(() => { if (this.people.includes(p)) this.wander(p); }, 1500)); }
+  private wander(p: Person) { const tgt = new THREE.Vector3(-60 + vrand() * 120, 0, (p.data.side ? STREET_Z + 7.5 : STREET_Z - 7) + vrand() * 1.2); p.walkTo(null, tgt, 'idle', null, () => setTimeout(() => { if (this.people.includes(p)) this.wander(p); }, 1500)); }
   randomFree() { for (let k = 0; k < 40; k++) { const x = Math.floor(vrand() * this.nav.w), z = Math.floor(vrand() * this.nav.d); if (this.nav.free(x, z)) return this.nav.center(x, z); } return new THREE.Vector3(0, 0, 0); }
   private pickArr<T>(a: T[]) { return a[Math.floor(vrand() * a.length)]; }
   private near(p: THREE.Vector3, r: number) { const a = vrand() * Math.PI * 2; return new THREE.Vector3(p.x + Math.cos(a) * r, 0, p.z + Math.sin(a) * r); }
@@ -121,7 +121,7 @@ export class World {
 
   // ---------------- Owner customization stage (matches the reference image) ----------------
   setupCustomization(male: Look, female: Look) {
-    this.mode = 'custom'; this.clearPeople(); this.stage.setShift(window.innerHeight > window.innerWidth ? 0.27 : 0); this.stage.setDayTime(0.12); this.view.setMood(0, 0);
+    this.mode = 'custom'; this.clearPeople(); this.stage.setShift(window.innerHeight > window.innerWidth ? 0.15 : 0); this.stage.setDayTime(0.12); this.view.setMood(0, 0);
     const { d } = hallDims(this.g.hall.size); const z = d / 2 + 9;
     const m = this.addPerson(male, new THREE.Vector3(-0.75, 0, z), 0.15, 'owner'); m.anim = 'crossed';
     const f = this.addPerson(female, new THREE.Vector3(0.75, 0, z), -0.15, 'owner'); f.anim = 'pose';
@@ -183,7 +183,7 @@ export class World {
     const o = this.addPerson(this.g.s.owner, base.clone().add(new THREE.Vector3(0, 0, -1.0)), 0, 'owner'); o.anim = 'sitTalk';
     const gp = this.addPerson(groom, base.clone().add(new THREE.Vector3(-0.55, 0, 1.15)), Math.PI, 'guest'); gp.anim = 'sitTalk';
     const bp = this.addPerson(bride, base.clone().add(new THREE.Vector3(0.55, 0, 1.15)), Math.PI, 'guest'); bp.anim = 'sit';
-    this.rig.flyTo(base.clone().add(new THREE.Vector3(0.0, 0.7, 0.1)), 4.4, 0.3, 0.5); this.rig.snap(); this.rig.locked = true;
+    this.rig.flyTo(base.clone().add(new THREE.Vector3(0.0, 0.8, 0.2)), 5.0, 0.28, 0.45, true); this.rig.snap(); this.rig.locked = true;
     return { groom: gp, bride: bp, owner: o };
   }
   endMeeting() { this.extra.clear(); this.rig.locked = false; this.setupDay(); this.viewHall(true); }
@@ -212,6 +212,9 @@ export class NightDirector {
     const groomLook: Look = { ...r.look.g, dress: 'groom', acc: [] }; const brideLook: Look = { ...r.look.b, dress: 'bride', hair: 0, acc: ['earrings', 'necklace'] };
     this.groom = w.addPerson(groomLook, new THREE.Vector3(-0.6, 0, STREET_Z - 8), Math.PI, 'groom'); this.bride = w.addPerson(brideLook, new THREE.Vector3(0.6, 0, STREET_Z - 8), Math.PI, 'bride');
     this.bride.setProp('bouquet'); this.groom.anim = 'idle'; this.bride.anim = 'idle';
+    // The couple arrives in a white limousine that pulls up at the curb (its own parking lane, clear of traffic).
+    this.groom.obj.visible = false; this.bride.obj.visible = false;
+    this.limo = Props.car('#f7f7f7', true); this.limo.rotation.y = Math.PI / 2; this.limo.position.set(-90, 0, STREET_Z - 3.6); w.stage.scene.add(this.limo);
     // Owner greets at the door.
     w.owner = w.addPerson(g.s.owner, new THREE.Vector3(3, 0, d / 2 - 1.5), Math.PI, 'owner'); w.owner.anim = 'pose';
     // Staff
@@ -249,8 +252,16 @@ export class NightDirector {
     const tgt = tables.length ? tables[Math.floor(vrand() * tables.length)] : w.randomFree();
     p.setProp('tray'); p.walkTo(w.nav, tgt.clone().add(new THREE.Vector3(1.6 * (vrand() < 0.5 ? 1 : -1), 0, 0)), 'idle', null, () => { p.setProp(null); setTimeout(() => p.walkTo(w.nav, kitchen, 'idle', null, () => setTimeout(() => this.waiterLoop(p), 600)), 900); });
   }
+  limo: THREE.Object3D | null = null; limoState = 0;
+  private updateLimo(dt: number) {
+    const l = this.limo; if (!l) return; const sim = this.sim; const arriveEnd = sim.phaseTimes[0].end;
+    if (this.limoState === 0) { const k = Math.min(1, sim.t / (arriveEnd * 0.85)); const ease = 1 - Math.pow(1 - k, 3); l.position.x = -90 + ease * 88;
+      if (k >= 1) { this.limoState = 1; this.groom.obj.visible = true; this.bride.obj.visible = true; this.groom.place(new THREE.Vector3(-0.6, 0, STREET_Z - 6), Math.PI); this.bride.place(new THREE.Vector3(0.6, 0, STREET_Z - 6), Math.PI); this.groom.anim = 'wave'; this.w.view.fx.emit('petals', new THREE.Vector3(0, 0, STREET_Z - 7), 60, 2.5); } }
+    else if (this.limoState === 1 && sim.phase !== 'arrive') { this.limoState = 2; }
+    else if (this.limoState === 2) { l.position.x += dt * 12; if (l.position.x > 100) { l.removeFromParent(); this.limo = null; } }
+  }
   update(dt: number, t: number) {
-    const sim = this.sim; const w = this.w; this.t = sim.t;
+    const sim = this.sim; const w = this.w; this.t = sim.t; this.updateLimo(dt);
     const ph = sim.phase;
     if (ph !== this.phase) { this.phase = ph; this.enterPhase(ph); }
     // Arrivals are staggered.
@@ -295,6 +306,7 @@ export class NightDirector {
     const head = nav.spots.head?.[0]; const dance = nav.spots.dance?.[0] ?? new THREE.Vector3(0, 0, 0);
     switch (ph) {
       case 'entrance': {
+        w.view.fx.emit('petals', new THREE.Vector3(0, 0, d / 2 - 2), 180, 2.5); w.view.fx.emit('petals', dance.clone(), 120, 2.5);
         // Guests stand and clap while the couple walks the aisle.
         for (const p of this.guests) if (!p.moving) { p.anim = 'clap'; p.expr = 'excited'; }
         const aisleEnd = dance.clone();
@@ -309,6 +321,7 @@ export class NightDirector {
         break;
       }
       case 'dancing': {
+        w.view.fx.emit('confetti', dance.clone(), 200, 3.5);
         const cells = nav.danceCells.length ? nav.danceCells : [dance];
         this.groom.walkTo(nav, dance.clone().add(new THREE.Vector3(-0.28, 0, 0)), 'slowdance', Math.PI / 2); this.bride.walkTo(nav, dance.clone().add(new THREE.Vector3(0.28, 0, 0)), 'slowdance', -Math.PI / 2);
         this.guests.forEach((p, i) => { if (i % 3 === 2) return; const c = cells[Math.floor(vrand() * cells.length)]; const tgt = c.clone().add(new THREE.Vector3((vrand() - 0.5) * 0.6, 0, (vrand() - 0.5) * 0.6)); if (tgt.distanceTo(dance) < 1.2) tgt.add(new THREE.Vector3(1.5, 0, 1.5)); p.walkTo(nav, tgt, DANCES[i % 5], vrand() * 6); });
@@ -316,6 +329,7 @@ export class NightDirector {
         break;
       }
       case 'farewell': {
+        for (let k = 0; k < 6; k++) setTimeout(() => { if (this.w.night === this) this.w.view.fx.emit('sparkle', new THREE.Vector3((k % 2 ? 2.6 : -2.6), 1.6, d / 2 + 3 + k * 1.5), 40, 0.2); }, 1500 + k * 450);
         w.view.doorTarget = 1;
         // Guests line the exit for the sparkler send-off, then leave.
         this.guests.forEach((p, i) => { const side = i % 2 ? 1 : -1; const row = Math.floor(i / 2); const z = d / 2 + 3 + (row % 12) * 1.1; p.walkTo(nav, new THREE.Vector3(side * 0.3, 0, d / 2 - 0.5), 'walk', null, () => p.walkPath([new THREE.Vector3(side * 2.6, 0, z)], 'cheer', side > 0 ? -Math.PI / 2 : Math.PI / 2)); });
@@ -335,7 +349,9 @@ export class NightDirector {
   }
   /** Perfect night: slow-motion confetti and a close-up of the couple. */
   celebrate() { const p = this.groom.pos.clone().add(this.bride.pos).multiplyScalar(0.5); this.w.rig.flyTo(p.setY(1), 4.5, 0.2); }
-  dispose() { this.w.view.doorTarget = 0; this.w.view.flicker = 0; }
+  /** Confetti and sparkles when the player nails a special moment. */
+  momentFx() { const p = this.groom.pos.clone().add(this.bride.pos).multiplyScalar(0.5); this.w.view.fx.emit('confetti', p, 140, 2.5); this.w.view.fx.emit('sparkle', p.clone().setY(1.6), 50, 0.2); }
+  dispose() { this.w.view.doorTarget = 0; this.w.view.flicker = 0; this.limo?.removeFromParent(); this.limo = null; }
 }
 
 // ======================================================================================

@@ -10,6 +10,7 @@ import * as P from './props';
 import { cosmeticColor } from '../business/shop';
 import { billboardActive } from '../business/marketing';
 import { Traffic } from './traffic';
+import { Particles } from './particles';
 
 export const WALL_H = 7;
 const _q = new THREE.Quaternion(); const _Y = new THREE.Vector3(0, 1, 0);
@@ -30,19 +31,22 @@ export class HallView {
   dance: THREE.Mesh | null = null; doors: THREE.Object3D[] = []; doorOpen = 0; doorTarget = 0;
   chandeliers: THREE.Object3D[] = []; lights: THREE.PointLight[] = []; spot: THREE.SpotLight[] = []; water: THREE.Mesh[] = []; glowWindows: THREE.MeshStandardMaterial[] = [];
   pickables: THREE.Object3D[] = []; traffic: Traffic | null = null; interiorMode = true; billboard: THREE.Object3D | null = null; officeObj: THREE.Object3D | null = null;
-  hallIdx = -1; night = 0; party = 0; flicker = 0; fireworks: THREE.Points | null = null; fwT = -1;
+  fx!: Particles; hallIdx = -1; night = 0; party = 0; flicker = 0; fireworks: THREE.Points | null = null; fwT = -1;
   constructor(public g: Game, public scene: THREE.Scene) { applyTextures(); scene.add(this.root); }
 
   build(hallIdx: number) {
     this.hallIdx = hallIdx; this.dispose();
     this.root.add(this.hood, this.exterior, this.interior, this.plotsGroup);
+    this.fx = new Particles(this.root); this.fx.density = this.g.s.settings.particles ? 1 : 0.35;
     const h = this.g.s.halls[hallIdx]; const def = HALLS.halls[hallIdx];
     this.buildHood(def.atmosphere, def);
     this.buildShell(h, def);
     this.buildInterior(h);
     this.buildPlots(h);
     this.applyCosmetics();
+    if (this.fountainAt) this.fx.fountain(this.fountainAt, 1);
   }
+  fountainAt: THREE.Vector3 | null = null;
   dispose() {
     this.root.clear(); this.interior = new THREE.Group(); this.exterior = new THREE.Group(); this.hood = new THREE.Group(); this.itemsGroup = new THREE.Group(); this.plotsGroup = new THREE.Group();
     this.walls = []; this.roof = new THREE.Group(); this.frontUpper = new THREE.Group(); this.doors = []; this.chandeliers = []; this.lights = []; this.spot = []; this.water = []; this.pickables = []; this.glowWindows = [];
@@ -107,7 +111,20 @@ export class HallView {
     this.doors = []; front.traverse((o) => { if ((o as any).side) this.doors.push(o); });
     // Interior wallpaper lining (only visible from inside)
     const lining = (len: number, x: number, z: number, ry: number) => { const m = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(len, 1.4), 2), MAT.wallpaper); m.position.set(x, 0.7, z); m.rotation.y = ry; this.interior.add(m); };
-    lining(w, 0, -d / 2 + 0.02, 0); lining(d, -w / 2 + 0.02, 0, Math.PI / 2); lining(d, w / 2 - 0.02, 0, -Math.PI / 2);
+    lining(w, 0, -d / 2 + 0.02, 0);
+    // Wall sconces on the inside of each wall and a gift table with wrapped presents by the entrance.
+    const decor = new THREE.Group();
+    const sconce = (x: number, z: number, ry: number) => { const g = new THREE.Group(); g.position.set(x, 3.0, z); g.rotation.y = ry;
+      g.add(P.mesh(new THREE.BoxGeometry(0.18, 0.5, 0.08), MAT.gold, 0, 0, 0)); g.add(P.mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.3, 6), MAT.gold, 0, 0.1, 0.15, Math.PI / 2));
+      g.add(P.mesh(new THREE.CylinderGeometry(0.12, 0.07, 0.18, 10), MAT.cloth, 0, 0.32, 0.28)); g.add(P.mesh(new THREE.SphereGeometry(0.06, 8, 6), MAT.bulb, 0, 0.25, 0.28)); decor.add(g); };
+    for (let x = -w / 2 + 3; x < w / 2 - 1; x += 4.4) sconce(x, -d / 2 + 0.05, 0);
+    for (let z = -d / 2 + 3; z < d / 2 - 1; z += 4.4) { sconce(-w / 2 + 0.05, z, Math.PI / 2); sconce(w / 2 - 0.05, z, -Math.PI / 2); }
+    const gift = new THREE.Group(); gift.position.set(w / 2 - 1.5, 0, d / 2 - 1);
+    gift.add(P.mesh(new THREE.BoxGeometry(2.4, 0.75, 1.0), MAT.themeCloth, 0, 0.375, 0)); gift.add(P.mesh(new THREE.BoxGeometry(2.5, 0.05, 1.1), MAT.white, 0, 0.77, 0));
+    const giftCols = [MAT.roseRed, MAT.goldSoft, MAT.white, MAT.themeRunner, MAT.leafDark];
+    for (let i = 0; i < 9; i++) { const sz = 0.18 + (i % 3) * 0.07; const b = P.mesh(new THREE.BoxGeometry(sz, sz, sz), giftCols[i % 5], -0.95 + (i % 5) * 0.45, 0.8 + sz / 2 + (i >= 5 ? 0.25 : 0), -0.2 + (i % 2) * 0.35, 0, i * 0.4, 0); gift.add(b); gift.add(P.mesh(new THREE.BoxGeometry(sz + 0.01, 0.03, sz * 0.3), MAT.gold, b.position.x, b.position.y + sz / 2, b.position.z, 0, i * 0.4, 0)); }
+    gift.add(P.mesh(new THREE.BoxGeometry(0.5, 0.04, 0.35), MAT.cloth, 0.75, 0.8, 0.25)); // guest book
+    decor.add(gift); this.interior.add(P.bake(decor)); lining(d, -w / 2 + 0.02, 0, Math.PI / 2); lining(d, w / 2 - 0.02, 0, -Math.PI / 2);
     // Portico with columns, pediment, dome and the golden rings
     const port = new THREE.Group(); port.position.set(0, 0, d / 2 + T);
     for (const x of [-4.5, -2.4, 2.4, 4.5]) { port.add(P.mesh(new THREE.CylinderGeometry(0.38, 0.45, 6.8, 16), MAT.creamLight, x, 3.4, 2.6)); port.add(P.mesh(new THREE.BoxGeometry(1.1, 0.35, 1.1), trim, x, 6.9, 2.6)); port.add(P.mesh(new THREE.BoxGeometry(1.1, 0.3, 1.1), MAT.creamLight, x, 0.15, 2.6)); }
@@ -248,7 +265,7 @@ export class HallView {
     for (let i = 0; i <= Math.floor(carpetLen / 2.5); i++) for (const s of [-1, 1]) { const st = P.stanchion(); const z = d / 2 + 6 + i * 2.5; st.position.set(s * 2, 0, z); plaza.add(st); if (i > 0) plaza.add(P.ropeBetween(new THREE.Vector3(s * 2, 0, z - 2.5), new THREE.Vector3(s * 2, 0, z))); }
     for (let i = 0; i < 8; i++) for (const s of [-1, 1]) { const r = P.roseBush(); r.position.set(s * (7 + (i % 2) * 1.2), 0, d / 2 + 2 + i * 1.6); plaza.add(r); }
     for (const s of [-1, 1]) for (let i = 0; i < 3; i++) { const t = P.tree('cypress', 1.1); t.position.set(s * 10, 0, d / 2 + 3 + i * 5); plaza.add(t); }
-    const f = P.fountain(); f.scale.setScalar(1.6); f.position.set(16, 0, d / 2 + 10); plaza.add(f);
+    const f = P.fountain(); f.scale.setScalar(1.6); f.position.set(16, 0, d / 2 + 10); plaza.add(f); this.fountainAt = new THREE.Vector3(16, 2.35, d / 2 + 10);
     // Lawns with low hedges and lamp posts so the block feels like palace gardens, not an empty lot.
     const lawn = (x: number, z: number, w: number, dd: number) => { const m = new THREE.Mesh(worldUV(new THREE.PlaneGeometry(w, dd), 4), MAT.grass); m.rotation.x = -Math.PI / 2; m.position.set(x, 0.035, z); m.receiveShadow = true; plaza.add(m);
       for (const s of [-1, 1]) { plaza.add(P.mesh(new THREE.BoxGeometry(w, 0.7, 0.7), MAT.leafDark, x, 0.35, z + s * (dd / 2 - 0.35))); plaza.add(P.mesh(new THREE.BoxGeometry(0.7, 0.7, dd), MAT.leafDark, x + s * (w / 2 - 0.35), 0.35, z)); } };
@@ -364,7 +381,7 @@ export class HallView {
     for (const w of this.water) { const m = w.material as any; if (m.uniforms?.t) m.uniforms.t.value = t; }
     for (let i = 0; i < this.chandeliers.length; i++) this.chandeliers[i].rotation.y = Math.sin(t * 0.3 + i) * 0.05;
     this.traffic?.update(dt, this.night);
-    this.updateFireworks(dt);
+    this.updateFireworks(dt); this.fx?.update(dt, t);
   }
   // Fireworks finish the night.
   launchFireworks() {

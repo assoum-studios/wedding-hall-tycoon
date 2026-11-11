@@ -178,20 +178,38 @@ export class App {
             h('div', { class: 'pt' }, L(def)), h('div', { class: 'sub' }, p.cost ? t('night.fixCost', { m: money(p.cost) }) : t('night.fixFree')), h('div', { class: 'ring' }, h('i')));
           this.overlay.append(el); n.bubbles.set(p.uid, el); sfx('alert');
         }
-        const wp = this.world.night?.problemWorldPos(p.uid); if (wp) { const sp = this.world.screenPos(wp.clone().setY(2.6)); el.style.left = sp.x + 'px'; el.style.top = sp.y + 'px'; el.style.display = sp.visible ? '' : 'none'; }
+        const wp = this.world.night?.problemWorldPos(p.uid); if (wp) { const sp = this.world.screenPos(wp.clone().setY(2.6)); const half = Math.min(110, el.offsetWidth / 2 + 6); el.style.left = Math.max(half, Math.min(innerWidth - half, sp.x)) + 'px'; el.style.top = Math.max(110, sp.y) + 'px'; el.style.display = sp.visible ? '' : 'none'; }
         (el.querySelector('.ring i') as HTMLElement).style.width = (p.timeLeft / p.total) * 100 + '%';
         el.classList.toggle('mgr', !!p.manager && p.manager.eta > 0);
       } else if (el) { el.remove(); n.bubbles.delete(p.uid); }
     }
+    this.updateTableFaces();
     if (sim.done && !n.ended) this.endNight();
   }
+  /** Live happiness faces over every table: each table drifts a little around the night's overall mood. */
+  private tableFaces: { el: HTMLElement; pos: THREE.Vector3; bias: number }[] = []; private faceT = 0;
+  private updateTableFaces() {
+    const night = this.world.night; if (!night) return;
+    if (!this.tableFaces.length) {
+      const spots = (this.world.nav.spots.table ?? []).slice(0, 40);
+      this.tableFaces = spots.map((p, i) => { const el = h('div', { class: 'table-face' }, '🙂'); this.overlay.append(el); return { el, pos: p.clone().setY(1.9), bias: ((i * 37) % 11) - 5 }; });
+    }
+    const phase = night.sim.phase; const show = phase === 'dinner' || phase === 'dancing';
+    this.faceT += 1;
+    for (const f of this.tableFaces) {
+      if (!show) { f.el.style.display = 'none'; continue; }
+      const sp = this.world.screenPos(f.pos); f.el.style.display = sp.visible ? '' : 'none'; f.el.style.left = sp.x + 'px'; f.el.style.top = sp.y + 'px';
+      if (this.faceT % 20 === 0) { const m = night.mood() + f.bias + (night.sim.problems.some((p) => p.state === 'active') ? -6 : 0); f.el.textContent = m > 85 ? '😍' : m > 70 ? '😀' : m > 55 ? '🙂' : m > 40 ? '😐' : m > 25 ? '😟' : '😠'; }
+    }
+  }
+  private clearTableFaces() { for (const f of this.tableFaces) f.el.remove(); this.tableFaces = []; }
   private nightEvent(ev: { kind: string; data?: any }) {
     const n = this.night!; const sim = n.sim;
     switch (ev.kind) {
       case 'phase': if (ev.data === 'dancing') { playMusic('party'); sfx('cheer'); } if (ev.data === 'farewell') { playMusic('day'); setTimeout(() => sfx('firework'), 2600); setTimeout(() => sfx('firework'), 3200); } if (ev.data === 'entrance') sfx('cheer'); break;
       case 'moment': {
         n.moment?.remove(); const m = ev.data;
-        n.moment = h('div', { class: 'moment' }, h('button', { class: 'ringbtn', onClick: () => { if (sim.tapMoment(m.id)) { sfx('moment'); confetti(); toast(t('moment.hit', { m: t('moment.' + m.id) }), 'good'); } n.moment?.remove(); n.moment = null; } }, t('moment.' + m.id), h('span', { style: { fontSize: '13px' } }, t('moment.tap'))));
+        n.moment = h('div', { class: 'moment' }, h('button', { class: 'ringbtn', onClick: () => { if (sim.tapMoment(m.id)) { sfx('moment'); confetti(); this.world.night?.momentFx(); toast(t('moment.hit', { m: t('moment.' + m.id) }), 'good'); } n.moment?.remove(); n.moment = null; } }, t('moment.' + m.id), h('span', { style: { fontSize: '13px' } }, t('moment.tap'))));
         uiRoot().append(n.moment); sfx('alert'); break;
       }
       case 'momentMiss': n.moment?.remove(); n.moment = null; break;
@@ -202,7 +220,7 @@ export class App {
   }
   skipNight() { const n = this.night; if (!n) return; n.sim.skip(); }
   endNight() {
-    const n = this.night!; n.ended = true; n.moment?.remove(); for (const el of n.bubbles.values()) el.remove();
+    const n = this.night!; n.ended = true; n.moment?.remove(); for (const el of n.bubbles.values()) el.remove(); this.clearTableFaces();
     const rec = n.sim.finish(); if (n.sim.photo) addPhoto(this.g, rec, n.sim.photo);
     if (rec.happiness >= CFG.happiness.perfect) { confetti(true); this.world.night?.celebrate(); sfx('success'); }
     setTimeout(() => this.showReport(rec), rec.happiness >= CFG.happiness.perfect ? 2200 : 400);

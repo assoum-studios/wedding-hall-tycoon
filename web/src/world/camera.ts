@@ -60,7 +60,8 @@ export class CameraRig {
   private clampTarget() { const t = this.goal.target; t.x = Math.max(this.bounds.minX, Math.min(this.bounds.maxX, t.x)); t.z = Math.max(this.bounds.minZ, Math.min(this.bounds.maxZ, t.z)); }
   zoom(f: number) { this.goal.dist = this.clampDist(this.goal.dist * f); }
   rotate(a: number) { this.goal.yaw += a; }
-  flyTo(target: THREE.Vector3, dist?: number, pitch?: number, yaw?: number) { this.goal.target.copy(target); if (dist) this.goal.dist = this.clampDist(dist); if (pitch != null) this.goal.pitch = pitch; if (yaw != null) this.goal.yaw = yaw; this.clampTarget(); }
+  /** free = ignore the map limits (used for scenes staged away from the hall, like the meeting room). */
+  flyTo(target: THREE.Vector3, dist?: number, pitch?: number, yaw?: number, free = false) { this.goal.target.copy(target); if (dist) this.goal.dist = free ? dist : this.clampDist(dist); if (pitch != null) this.goal.pitch = pitch; if (yaw != null) this.goal.yaw = yaw; if (!free) this.clampTarget(); }
   snap() { this.target.copy(this.goal.target); this.dist = this.goal.dist; this.yaw = this.goal.yaw; this.pitch = this.goal.pitch; this.apply(); }
   update(dt: number) {
     const k = 1 - Math.pow(0.0005, dt);

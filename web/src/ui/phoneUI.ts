@@ -5,7 +5,7 @@ import { CONTENT, CFG } from '../core/data';
 import { postWedding, boostPost, answerMessage, unreadCount } from '../phone/phone';
 import { answerCall } from '../progress/events';
 import { owed } from '../business/loans';
-import { h, div, btn, ic, uiRoot, toast } from './dom';
+import { h, div, btn, ic, uiRoot, toast, stars } from './dom';
 import { sfx, haptic } from '../audio/audio';
 import { openOffice } from './office';
 
@@ -24,7 +24,7 @@ export function openPhone(app: App, appId: string | null = null) {
       scr.append(div('apphead', h('span', { class: 'grow' }, t('phone.title')), btn('✕', close, 'small red')), div('apps',
         appBtn('vowly', 'heart', 'linear-gradient(135deg,#ff5d8f,#ffb347)', t('phone.vowly')), appBtn('messages', 'msg', 'linear-gradient(#6ddc56,#36b44a)', t('phone.messages'), unreadCount(g)),
         appBtn('calls', 'call', 'linear-gradient(#5b8ff0,#1f4fb8)', t('phone.calls'), g.s.pendingCalls.length), appBtn('gallery', 'camera', 'linear-gradient(#ffd27a,#e2a13a)', t('phone.gallery')),
-        appBtn('bank', 'bank', 'linear-gradient(#9aa3b0,#4b5563)', t('phone.bank'))));
+        appBtn('bank', 'bank', 'linear-gradient(#9aa3b0,#4b5563)', t('phone.bank')), appBtn('reviews', 'star', 'linear-gradient(#ffd27a,#e0384f)', t('phone.reviews'))));
       return;
     }
     if (cur === 'vowly') {
@@ -49,6 +49,11 @@ export function openPhone(app: App, appId: string | null = null) {
     }
     if (cur === 'gallery') {
       scr.append(head(t('phone.gallery')), div('appbody', ...(g.s.photos.length ? [div('grid3', ...[...g.s.photos].reverse().map((p) => h('div', { class: 'card', style: { padding: '4px' } }, h('img', { src: p.data, style: { width: '100%', borderRadius: '8px' } }), h('div', { class: 'sub' }, L(p.names[0]) + ' & ' + L(p.names[1])))))] : [h('div', { class: 'empty' }, t('phone.noPhotos'))])));
+    }
+    if (cur === 'reviews') {
+      const hist = [...g.s.history].reverse(); const avg = hist.length ? hist.reduce((a, r) => a + r.stars, 0) / hist.length : 0;
+      scr.append(head(t('phone.reviews')), div('appbody', h('div', { class: 'card', style: { textAlign: 'center' } }, h('div', { class: 'big-score', style: { fontSize: '40px' } }, avg.toFixed(1)), stars(avg), h('div', { class: 'sub' }, t('reviews.count', { n: hist.length }))),
+        ...(hist.length ? hist.slice(0, 40).map((r) => h('div', { class: 'card' }, h('div', { class: 'row' }, h('b', { class: 'grow' }, L(r.names[0]) + ' & ' + L(r.names[1])), stars(r.stars)), h('div', { class: 'quote', style: { margin: '6px 0' } }, '“' + L(r.review) + '”'), h('div', { class: 'sub' }, t('reviews.meta', { h: r.happiness, n: r.guests, d: r.day + 1 })))) : [h('div', { class: 'empty' }, t('reviews.none'))])));
     }
     if (cur === 'bank') {
       scr.append(head(t('phone.bank')), div('appbody', h('div', { class: 'card' }, h('div', { class: 'sub' }, t('money.balance')), h('div', { class: 'big-score', style: { fontSize: '34px' } }, money(g.s.money))),

@@ -497,5 +497,22 @@
  "staff.noCandidates": "No candidates right now. New ones arrive every few days.",
  "mgr.yours": "Your managers",
  "mgr.hire": "Manager candidates",
- "build.noSpace": "No free space for this item. Move or remove something, or expand the hall."
+ "build.noSpace": "No free space for this item. Move or remove something, or expand the hall.",
+ "phone.reviews": "Reviews",
+ "reviews.count": "{n} reviews",
+ "reviews.meta": "{h}% happy · {n} guests · day {d}",
+ "reviews.none": "Reviews from your couples will appear here.",
+ "cal.title": "This month",
+ "cal.free": "Free",
+ "cal.legend": "Gold = wedding booked · tap a day to see it",
+ "tips.1": "Listen to how couples describe their dream: they never give you a checklist.",
+ "tips.2": "Untick extras you can't provide, but every missing wish lowers happiness.",
+ "tips.3": "A manager walks to problems and fixes them for you, even when you skip a night.",
+ "tips.4": "Short of waiters? Food problems get much more likely.",
+ "tips.5": "Victor gets stronger every chapter. Keep your rating high!",
+ "tips.6": "Build mode: green spots show exactly where an item fits.",
+ "tips.7": "Post your best weddings on Vowly to gain followers and more requests.",
+ "tips.8": "Paying a loan off early saves half of the remaining interest.",
+ "tips.9": "Tap the golden circle at the right moment for bonus happiness.",
+ "tips.10": "Upgrades make the hall prettier and make problems rarer."
 }

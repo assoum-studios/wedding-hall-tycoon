@@ -25,12 +25,13 @@ export function openBuild(app: App) {
     else { sfx('fail'); haptic(30); toast(t('build.noRoom'), 'bad'); }
   };
   bm.onChange = () => { updateItems(); updateSel(); };
-  const close = () => { root.remove(); w.endBuild(); app.refresh(); app.persist(); };
+  const close = () => { (window as any).__buildClose = null; root.remove(); w.endBuild(); app.refresh(); app.persist(); };
+  (window as any).__buildClose = close;
 
   // --- top bar (built once, numbers updated in place) ---
   const info = h('div', { class: 'stat' }); const undoBtn = btn([ic('undo'), t('build.undo')], () => { const u = undo.pop(); if (u) { u(); bm.selectedUid = null; after(); } }, 'small ghost');
   const updateTop = () => { const hall = g.hall; info.textContent = t('build.info', { s: capacity(hall), c: hallDims(hall.size).cap, l: layoutScore(hall, capacity(hall)).toFixed(1) }); (undoBtn as HTMLButtonElement).disabled = !undo.length; };
-  const top = div('hud-top', info, h('div', { class: 'hud-right' }, undoBtn, btn(t('build.layouts'), () => layouts(), 'small gold'), btn([ic('check'), t('build.done')], close, 'small green', { id: 'btn-build-done' })));
+  const top = div('hud-top build-top', h('div', { class: 'build-row' }, info, btn([ic('check'), t('build.done')], close, 'green build-done', { id: 'btn-build-done', 'aria-label': t('build.done') })), h('div', { class: 'build-row' }, undoBtn, btn(t('build.layouts'), () => layouts(), 'small gold')));
 
   // --- item bar: built once so its scroll position never jumps ---
   const itemBtns = new Map<string, HTMLElement>();

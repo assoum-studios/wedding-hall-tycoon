@@ -224,3 +224,19 @@ body:has(.backdrop) .guide .face { width: 54px; height: 54px; }
 @media (max-width: 400px) { .date-stat .ico { display: none; } }
 .role-card { display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center; cursor: pointer; font-family: var(--font-body); }
 .role-card .title { font-size: 16px; }
+
+.build-top { flex-direction: column; align-items: stretch; gap: 6px; }
+.build-row { display: flex; gap: 8px; align-items: center; pointer-events: none; }
+.build-row > * { pointer-events: auto; }
+.build-row .stat { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-size: 13px; white-space: normal; }
+.build-done { flex: none; min-width: 120px; font-size: 18px; }
+@media (max-aspect-ratio: 1/1) { .custom .logo-small { width: 30vw; } .turnaround img { width: 38px; height: 56px; } }
+
+.table-face { position: absolute; transform: translate(-50%, -100%); font-size: 22px; filter: drop-shadow(0 2px 2px rgba(0,0,0,.35)); pointer-events: none; transition: transform .2s; }
+
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; margin-top: 8px; }
+.cal-day { aspect-ratio: 1; border-radius: 10px; background: #f3e8d1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0; font-family: var(--font-body); color: var(--blue-dark); position: relative; }
+.cal-day .cal-n { font-weight: 900; font-size: 15px; line-height: 1; } .cal-day .cal-m { font-size: 9px; opacity: .7; }
+.cal-day.booked { background: linear-gradient(var(--gold2), var(--gold)); color: #5a3a00; box-shadow: 0 2px 0 var(--gold-dark); }
+.cal-day.today { outline: 3px solid var(--blue); }
+.cal-dot { position: absolute; top: 1px; inset-inline-end: 2px; font-size: 10px; }

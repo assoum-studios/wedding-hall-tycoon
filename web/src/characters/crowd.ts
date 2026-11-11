@@ -19,11 +19,25 @@ function emoteMaterial(kind: string) {
   return new THREE.SpriteMaterial({ map: t, depthTest: false, transparent: true });
 }
 
+const BLOB_GEO = new THREE.CircleGeometry(0.42, 20);
+let BLOB_MAT: THREE.MeshBasicMaterial | null = null;
+function blobMat() {
+  if (!BLOB_MAT) {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const x = c.getContext('2d')!; const g = x.createRadialGradient(32, 32, 2, 32, 32, 32);
+    g.addColorStop(0, 'rgba(0,0,0,0.45)'); g.addColorStop(1, 'rgba(0,0,0,0)'); x.fillStyle = g; x.fillRect(0, 0, 64, 64);
+    BLOB_MAT = new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false });
+  }
+  return BLOB_MAT;
+}
 export class Person {
   c: CharacterMesh; pos = new THREE.Vector3(); face = 0; path: THREE.Vector3[] = []; speed = 1.4; anim: Anim = 'idle'; afterAnim: Anim = 'idle'; afterFace: number | null = null;
   expr: Face = 'happy'; phase = Math.random() * 10; emote: THREE.Sprite | null = null; emoteT = 0; onArrive: (() => void) | null = null; role = 'guest'; data: any = {};
   bubble: { text: string; t: number } | null = null; nearCam = true; private tick = 0;
-  constructor(public look: Look, detail = 1) { this.c = buildCharacter(look, detail); }
+  constructor(public look: Look, detail = 1) {
+    this.c = buildCharacter(look, detail);
+    // Soft contact shadow under the feet: grounds people even on the Smooth setting (no real-time shadows).
+    const blob = new THREE.Mesh(BLOB_GEO, blobMat()); blob.rotation.x = -Math.PI / 2; blob.position.y = 0.02; blob.scale.setScalar(this.c.dims.H / 1.75); blob.renderOrder = 1; this.c.mesh.add(blob);
+  }
   get obj() { return this.c.mesh; }
   place(p: THREE.Vector3, face = 0) { this.pos.copy(p); this.face = face; this.path = []; this.sync(); }
   walkTo(nav: NavGrid | null, to: THREE.Vector3, then: Anim = 'idle', face: number | null = null, onArrive: (() => void) | null = null, run = false) {

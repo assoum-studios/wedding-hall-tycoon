@@ -120,8 +120,14 @@ export function invoice(app: App, r: ClientRequest, done: () => void) {
 function calendarView(app: App, rerender: () => void, focus?: string) {
   const g = app.g; const list = g.s.bookings.filter((b) => b.hall === g.s.activeHall).sort((a, b) => a.date - b.date);
   const others = g.s.bookings.filter((b) => b.hall !== g.s.activeHall);
-  if (!list.length && !others.length) return [h('div', { class: 'empty' }, t('book.noBookings'))];
-  return [div('grid2', ...list.map((b) => h('div', { class: 'card' + (b.id === focus || b.date === g.s.day ? ' hl' : '') },
+  // Month view: the next 28 days, booked days in gold. Tap a booked day to plan that wedding.
+  const days = Array.from({ length: 28 }, (_, i) => g.s.day + i);
+  const month = h('div', { class: 'card' }, h('div', { class: 'row' }, h('b', { class: 'grow' }, t('cal.title')), h('span', { class: 'sub' }, t('cal.legend'))),
+    div('cal-grid', ...days.map((d) => { const b = list.find((x) => x.date === d); const dd = g.date(d); const small = g.s.halls[g.s.activeHall].smallBookings.some((x) => x.date === d && x.accepted);
+      return h('button', { class: 'cal-day' + (b ? ' booked' : '') + (d === g.s.day ? ' today' : ''), onClick: () => { if (b) planning(app, b, rerender); else toast(t('cal.free'), 'info'); } },
+        h('span', { class: 'cal-n' }, String(dd.dom)), h('span', { class: 'cal-m' }, t('month.' + dd.month).slice(0, 3)), b ? h('span', { class: 'cal-dot' }, '💍') : small ? h('span', { class: 'cal-dot' }, '🎈') : null); })));
+  if (!list.length && !others.length) return [month, h('div', { class: 'empty' }, t('book.noBookings'))];
+  return [month, div('grid2', ...list.map((b) => h('div', { class: 'card' + (b.id === focus || b.date === g.s.day ? ' hl' : '') },
     h('div', { class: 'title' }, L(b.req.groom) + ' & ' + L(b.req.bride)),
     h('div', { class: 'row wrap', style: { margin: '6px 0' } }, h('span', { class: 'pill' }, dateLabel(app, b.date) + ' · ' + daysLabel(app, b.date)), h('span', { class: 'pill blue' }, '👥 ' + b.req.guests), h('span', { class: 'pill green' }, money(b.total))),
     h('div', { class: 'sub' }, b.plan.planned ? t('plan.done', { p: Math.round(Object.values(planMatches(b, b.plan)).filter(Boolean).length / 5 * 100) }) : t('plan.notYet')),

@@ -5,7 +5,7 @@ const g = newBotGame('normal', 31337);
 let crash = null as any;
 try {
   for (let d = 0; d < 200; d++) {
-    if (d === 20) runCheat(g, 'ROSE-RICH'); if (d === 60) runCheat(g, 'ROSE-RICH'); if (d === 90) { runCheat(g, 'ROSE-RICH'); runCheat(g, 'ROSE-FANS'); }
+    if (d === 20) runCheat(g, 'ROSE-RICH', true); if (d === 60) runCheat(g, 'ROSE-RICH', true); if (d === 90) { runCheat(g, 'ROSE-RICH', true); runCheat(g, 'ROSE-FANS', true); }
     botDay(g);
     const bad = JSON.stringify(g.s).includes('null,') && false; void bad;
   }

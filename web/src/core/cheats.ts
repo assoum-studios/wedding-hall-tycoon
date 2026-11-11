@@ -7,10 +7,10 @@ import { HALLS } from './data';
 import { genCandidate, hire } from '../staff/staff';
 import { ensureLayout, autoLayout } from '../world/layout';
 
-export const CHEATS_ENABLED = true;
+export const CHEATS_ENABLED = false; // switched off for release builds; tests pass force=true
 
-export function runCheat(g: Game, code: string): boolean {
-  if (!CHEATS_ENABLED) return false;
+export function runCheat(g: Game, code: string, force = false): boolean {
+  if (!CHEATS_ENABLED && !force) return false;
   const s = g.s;
   switch (code.trim().toUpperCase()) {
     case 'ROSE-MONEY': g.addMoney(1_000_000); break;
