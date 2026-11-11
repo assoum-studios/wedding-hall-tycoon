@@ -2,11 +2,11 @@ plugins { id 'com.android.application' }
 
 android {
     namespace 'com.assoumstudios.weddinghalltycoon'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'com.assoumstudios.weddinghalltycoon'
         minSdk 26            // Android 8.0
-        targetSdk 35
+        targetSdk 36
         versionCode Integer.parseInt(System.getenv('VERSION_CODE') ?: '1')
         versionName System.getenv('VERSION_NAME') ?: '1.0.0'
     }
