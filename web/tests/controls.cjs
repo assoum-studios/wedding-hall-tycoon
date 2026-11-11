@@ -6,7 +6,7 @@ const { chromium } = require('playwright');
   const b = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const page = await b.newPage({ viewport: { width: 900, height: 600 }, hasTouch: true });
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
-  await page.addInitScript(() => { localStorage.clear(); localStorage.setItem('whot_quality', 'smooth'); });
+  await page.addInitScript(() => { if (!sessionStorage.getItem('init')) { localStorage.clear(); localStorage.setItem('whot_quality', 'smooth'); sessionStorage.setItem('init', '1'); } });
   await page.goto(url); await page.waitForTimeout(4000);
   await page.evaluate(() => window.__app.quickStart('normal')); await page.waitForTimeout(3000);
   let fails = 0; const check = (ok, msg) => { console.log((ok ? 'PASS ' : 'FAIL ') + msg); if (!ok) fails++; };

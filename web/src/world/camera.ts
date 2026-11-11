@@ -41,9 +41,8 @@ export class CameraRig {
       this.goal.dist = this.clampDist(this.goal.dist * (this.last.d / Math.max(1, g.d)));
       let da = g.a - this.last.a; if (da > Math.PI) da -= 2 * Math.PI; if (da < -Math.PI) da += 2 * Math.PI;
       // Screen angle grows clockwise (y points down). Turning the fingers clockwise must turn the world clockwise
-      // under them, which means the camera orbits the other way: yaw += da.
-      if (!this.topDown) this.goal.yaw += da * (this.invert ? -1 : 1);
-      else this.goal.yaw += da * (this.invert ? -1 : 1);
+      // under them; increasing yaw turns the world counter-clockwise on screen, so yaw -= da. (Verified by tests/controls.cjs.)
+      this.goal.yaw -= da * (this.invert ? -1 : 1);
     }
     this.last = g; this.onUserMove();
   }
