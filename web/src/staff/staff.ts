@@ -82,7 +82,7 @@ export function staffNeeds(g: Game, hallIdx: number, guests: number) {
   for (const r of STAFF.roles) {
     if (!r.perGuests) continue;
     if (r.onlyIf === 'bar' && !has(g.s.halls[hallIdx].layout, 'bar')) continue;
-    if (r.id === 'valet' && guests < 60) continue;
+    if (r.minGuests && guests < r.minGuests) continue;
     need[r.id] = Math.max(1, Math.ceil((guests / r.perGuests) * mult));
   }
   return need;

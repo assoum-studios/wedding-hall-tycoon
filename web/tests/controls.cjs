@@ -48,6 +48,13 @@ const { chromium } = require('playwright');
     if (name === 'goals') for (let i = 2; i <= 5; i++) { await page.click(`.tab:nth-child(${i})`, { force: true }); await page.waitForTimeout(400); await latin('goals tab ' + i); }
     await page.evaluate(() => window.__androidBack()); await page.waitForTimeout(400);
   }
-  check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
+  // --- Save, quit and reload restores everything exactly.
+  const before = await page.evaluate(() => { window.__app.g.s.money += 12345; window.__app.persist(); return JSON.stringify(window.__app.g.s); });
+  await page.reload(); await page.waitForTimeout(4000);
+  await page.click('#slot-continue-0', { force: true }); await page.waitForFunction(() => window.__app.g.s.slot === 0, null, { timeout: 60000 }); await page.waitForTimeout(1500);
+  const after = await page.evaluate(() => { const s = JSON.parse(JSON.stringify(window.__app.g.s)); return s; });
+  const pre = JSON.parse(before); delete pre.savedAt; delete after.savedAt; delete pre.dailyGift; delete after.dailyGift;
+  check(JSON.stringify(pre) === JSON.stringify(after), 'save -> reload -> continue restores the exact same game');
+    check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : ''));
   await b.close(); console.log(fails ? `${fails} control check(s) failed` : 'All control checks passed.'); process.exit(fails ? 1 : 0);
 })();

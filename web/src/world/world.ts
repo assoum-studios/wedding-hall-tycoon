@@ -221,8 +221,8 @@ export class NightDirector {
     const n = Math.min(r.guests, cap, nav.seats.length); const seats = w['rng'].shuffle([...nav.seats]);
     for (let i = 0; i < n; i++) {
       const look = randomLook(this.rng); const s = seats[i];
-      const start = new THREE.Vector3(-3 + vrand() * 6, 0, STREET_Z - 6 - vrand() * 4);
-      const p = w.addPerson(look, start, Math.PI, 'guest'); p.anim = 'idle'; this.guests.push(p); this.seatsFor.set(p, { pos: s.pos, face: s.face }); p.data.delay = (i / n) * sim.phaseTimes[0].end * 0.7;
+      const { d: hd } = hallDims(h.size); const start = new THREE.Vector3(-3 + vrand() * 6, 0, hd / 2 + 4 + vrand() * 5);
+      const p = w.addPerson(look, start, Math.PI, 'guest'); p.anim = 'idle'; this.guests.push(p); this.seatsFor.set(p, { pos: s.pos, face: s.face }); p.data.delay = (i / n) * sim.phaseTimes[0].end * 0.45;
     }
   }
   private placeStaff() {
@@ -283,8 +283,8 @@ export class NightDirector {
   problemWorldPos(uid: number) { return this.problemsShown.get(uid) ?? null; }
   private walkInto(p: Person, to: THREE.Vector3, then: Anim, face: number | null) {
     const { d } = hallDims(this.w.g.hall.size);
-    const outside = [new THREE.Vector3(p.pos.x * 0.3, 0, STREET_Z - 12), new THREE.Vector3((vrand() - 0.5) * 2, 0, d / 2 + 4), new THREE.Vector3((vrand() - 0.5) * 1.5, 0, d / 2 + 0.6)];
-    p.walkPath(outside, 'walk', null, () => p.walkTo(this.w.nav, to, then, face));
+    const outside = [new THREE.Vector3((vrand() - 0.5) * 2, 0, d / 2 + 2), new THREE.Vector3((vrand() - 0.5) * 1.5, 0, d / 2 + 0.6)];
+    p.walkPath(outside, 'walk', null, () => { p.walkTo(this.w.nav, to, then, face); p.speed = 1.8; }); p.speed = 1.8;
   }
   private enterPhase(ph: string) {
     const w = this.w; const nav = w.nav; const { d } = hallDims(w.g.hall.size);

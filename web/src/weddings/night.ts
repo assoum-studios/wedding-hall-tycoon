@@ -154,7 +154,7 @@ export class NightSim {
     const hall = g.s.halls[b.hall];
     for (const u of HALLS.upgrades) h += ((hall.upgrades[u.id] ?? 1) - 1) * u.happiness * H.perUpgradeLevel;
     const kept = b.lines.filter((l) => l.on).length; h += kept * H.perDemand * 0.5; h += b.removed * H.removedDemand * P.demandWeight;
-    const short = shortages(g, b.hall, r.guests); for (const k in short) h += H.staffShortPerRole * Math.min(3, short[k]);
+    const short = shortages(g, b.hall, r.guests); let sp = 0; for (const k in short) sp += H.staffShortPerRole * Math.min(3, short[k]); h += Math.max(H.staffShortCap ?? -12, sp);
     h += H.menuBonus[r.menu] ?? 0; h += layoutScore(hall, r.guests); h += g.research('happinessAdd');
     let traitH = 0; for (const e of staffIn(g, b.hall)) traitH += STAFF.traits[e.trait]?.happiness ?? 0; h += Math.max(-3, Math.min(3, traitH));
     if (b.priceLevel > 1.4) h -= (b.priceLevel - 1.4) * (r.personality === 'picky' || r.personality === 'budget' ? 14 : 8);

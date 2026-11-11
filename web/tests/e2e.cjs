@@ -66,8 +66,8 @@ const path = require('path');
   await page.waitForTimeout(1500); await shot('19-report');
   const ok = await page.$('#btn-report-ok'); if (ok) await ok.click(); await page.waitForTimeout(2000); await shot('20-after');
   // Office + Goals + Phone
-  const off = await page.$('#btn-office'); if (off) { await off.click(); await page.waitForTimeout(900); await shot('21-office'); await page.click('.modal .close'); await page.waitForTimeout(400); }
-  const gl = await page.$('#btn-goals'); if (gl) { await gl.click(); await page.waitForTimeout(900); await shot('22-goals'); await page.click('.modal .close'); await page.waitForTimeout(400); }
+  const off = await page.$('#btn-office'); if (off) { await off.click({ force: true }); await page.waitForTimeout(900); await shot('21-office'); await page.click('.modal .close', { force: true }); await page.waitForTimeout(400); }
+  const gl = await page.$('#btn-goals'); if (gl) { await gl.click({ force: true }); await page.waitForTimeout(900); await shot('22-goals'); await page.click('.modal .close', { force: true }); await page.waitForTimeout(400); }
   await click('#btn-phone'); await page.waitForTimeout(600); await shot('23-phone');
   // Save -> reload -> continue restores the same state
   const before = await page.evaluate(() => { window.__app.persist(); const s = window.__app.g.s; return JSON.stringify({ day: s.day, money: s.money, staff: s.staff.length, hist: s.history.length, bookings: s.bookings.length }); });

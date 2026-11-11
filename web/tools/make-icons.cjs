@@ -6,8 +6,10 @@ const fs = require('fs'); const path = require('path');
   const root = path.resolve(__dirname, '..', '..');
   const icon = fs.readFileSync(path.join(__dirname, '..', 'public', 'icon.svg'), 'utf8');
   const logo = fs.readFileSync(path.join(__dirname, '..', 'public', 'logo-en.svg'), 'utf8');
+  const font = (pkg, file) => fs.readFileSync(path.join(__dirname, '..', 'node_modules', '@fontsource', pkg, 'files', file)).toString('base64');
+  const fontCss = `<style>@font-face{font-family:'Lilita One';src:url(data:font/woff2;base64,${font('lilita-one', 'lilita-one-latin-400-normal.woff2')}) format('woff2')}@font-face{font-family:'Lalezar';src:url(data:font/woff2;base64,${font('lalezar', 'lalezar-arabic-400-normal.woff2')}) format('woff2')}</style>`;
   const b = await chromium.launch(); const p = await b.newPage();
-  const render = async (html, w, h, out) => { await p.setViewportSize({ width: w, height: h }); await p.setContent(`<html><body style="margin:0;background:transparent">${html}</body></html>`); await p.waitForTimeout(300); fs.mkdirSync(path.dirname(out), { recursive: true }); await p.screenshot({ path: out, omitBackground: true }); };
+  const render = async (html, w, h, out) => { await p.setViewportSize({ width: w, height: h }); await p.setContent(`<html><head>${fontCss}</head><body style="margin:0;background:transparent">${html}</body></html>`); await p.evaluate(() => document.fonts.ready); await p.waitForTimeout(400); fs.mkdirSync(path.dirname(out), { recursive: true }); await p.screenshot({ path: out, omitBackground: true }); };
   const sizes = { mdpi: 48, hdpi: 72, xhdpi: 96, xxhdpi: 144, xxxhdpi: 192 };
   for (const [d, s] of Object.entries(sizes)) {
     const svg = icon.replace('<svg ', `<svg width="${s}" height="${s}" `);

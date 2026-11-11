@@ -454,7 +454,8 @@
   "skipPenalty": 12,
   "managerSkipReduction": 2.0,
   "unattendedPenalty": 8,
-  "perfect": 95
+  "perfect": 95,
+  "staffShortCap": -12
  },
  "night": {
   "lengthSeconds": {
