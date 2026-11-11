@@ -17,7 +17,7 @@ export const div = (cls: string, ...kids: any[]) => h('div', { class: cls }, ...
 export const btn = (label: any, onClick: () => void, cls = '', attrs: Record<string, any> = {}) => h('button', { class: 'btn ' + cls, onClick, ...attrs }, ...(Array.isArray(label) ? label : [label]));
 export function toggle(on: boolean, onChange: (v: boolean) => void) { const el = h('button', { class: 'toggle' + (on ? ' on' : ''), 'aria-pressed': String(on) }); el.addEventListener('click', () => { on = !on; el.classList.toggle('on', on); sfx('tap'); onChange(on); }); return el; }
 export function bar(frac: number, cls = '') { return h('div', { class: 'bar ' + cls }, h('i', { style: { width: Math.max(0, Math.min(100, frac * 100)) + '%' } })); }
-export function stars(n: number) { const full = Math.floor(n), half = n - full >= 0.5; return h('span', { class: 'stars' }, '★'.repeat(full) + (half ? '⯨' : '') + '☆'.repeat(Math.max(0, 5 - full - (half ? 1 : 0)))); }
+export function stars(n: number) { const el = h('span', { class: 'stars' }); for (let i = 0; i < 5; i++) { const f = Math.max(0, Math.min(1, n - i)); el.append(h('span', { class: 'star' }, h('span', { class: 'star-bg' }, '★'), h('span', { class: 'star-fg', style: { width: Math.round(f * 100) + '%' } }, '★'))); } return el; }
 
 const P = (d: string) => `<svg class="ic" viewBox="0 0 24 24"><path d="${d}"/></svg>`;
 export const ICON = {

@@ -20,12 +20,10 @@ export function genCandidate(g: Game, role?: string): Candidate {
   const trait = g.rng.pick(TRAITS) as string;
   return { id: g.uid('c'), name: randName(g, gender), role: role!, skill, trait, wage: wageFor(role!, skill), interviewed: false, look: randomLook(g.rng, { gender, uniform: ROLE_BY_ID[role!].uniform }), quote: 0 };
 }
+/** New candidates every few days: two or three for every role (managers included), so each staff section has people to interview. */
 export function refreshCandidates(g: Game) {
   g.s.candidates = [];
-  for (let i = 0; i < STAFF.candidatesPerRefresh; i++) g.s.candidates.push(genCandidate(g));
-  // Always offer at least one waiter and, from chapter 3, a manager.
-  if (!g.s.candidates.some((c) => c.role === 'waiter')) g.s.candidates[0] = genCandidate(g, 'waiter');
-  if (g.s.chapter >= 3 && !g.s.candidates.some((c) => c.role === 'manager')) g.s.candidates[1] = genCandidate(g, 'manager');
+  for (const r of STAFF.roles) { const n = r.id === 'waiter' ? 3 : 2; for (let i = 0; i < n; i++) g.s.candidates.push(genCandidate(g, r.id)); }
   g.s.candidatesDay = g.s.day;
   g.emit('candidates');
 }

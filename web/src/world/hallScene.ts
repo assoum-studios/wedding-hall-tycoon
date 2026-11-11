@@ -326,7 +326,7 @@ export class HallView {
   /** Applies the wedding plan colors (theme, flowers, lighting) to the hall. The hall visibly changes. */
   applyPlan(plan: Plan | null) {
     const th = plan ? CFG.themes[plan.theme] : null; const flower = plan ? CFG.flowers[plan.flower]?.color : null;
-    MAT.themeCloth.color.set(th ? th.colors[2] ?? '#ffffff' : '#fffdf8'); MAT.themeRunner.color.set(th ? th.colors[0] : '#d9c39a');
+    MAT.themeCloth.color.set(th ? th.colors[2] ?? '#f2ede2' : '#f2ede2'); MAT.themeRunner.color.set(th ? th.colors[0] : '#d9c39a');
     MAT.themeDrape.color.set(th ? th.colors[1] : '#f3ead8'); MAT.themeFlower.color.set(flower ?? '#ffffff'); MAT.themeAccent.color.set(th ? th.colors[0] : '#d9c39a');
     if (flower === '#ffffff' && th) MAT.themeFlower.color.set(th.colors[0] === '#1d1d2b' ? '#ffffff' : '#fffaf2');
     const lc = plan ? CFG.lighting[plan.light]?.color ?? '#ffd9a0' : '#ffd9a0';
@@ -337,7 +337,7 @@ export class HallView {
   applyCosmetics(plan?: Plan | null) {
     const i = this.hallIdx; if (i < 0) return;
     const wall = cosmeticColor(this.g, i, 'wall'); MAT.wallTint.color.set(wall ?? HALLS.halls[i].palette.wall); MAT.wallpaper.color.set(wall ?? '#ffffff');
-    const chairs = cosmeticColor(this.g, i, 'chairs'); MAT.chair.color.set(chairs ?? '#f4efe4');
+    const chairs = cosmeticColor(this.g, i, 'chairs'); MAT.chair.color.set(chairs ?? '#e3d9c4');
     const carpet = cosmeticColor(this.g, i, 'carpet'); MAT.carpet.color.set(carpet ? carpet : '#ffffff');
     const tables = cosmeticColor(this.g, i, 'tables'); if (tables && !plan) MAT.themeCloth.color.set(tables);
     const chand = cosmeticColor(this.g, i, 'chandelier'); MAT.crystal.color.set(chand ?? '#f4fbff'); MAT.crystal.emissive.set(chand ?? '#fff4d8');

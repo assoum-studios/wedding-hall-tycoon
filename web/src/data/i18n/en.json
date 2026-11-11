@@ -204,7 +204,7 @@
  "mgr.fixChance": "Fixes problems {p}% of the time",
  "mgr.help": "Managers run parties, fix problems, plan weddings and accept good bookings for you. One per hall.",
  "mgr.makeManager": "Manage {h}",
- "mgr.none": "No managers yet. Hire an event manager from the Staff tab.",
+ "mgr.none": "No managers yet. Hire one from the candidates below.",
  "mgr.plan": "Plan weddings",
  "mgr.run": "Run parties when I am away",
  "mgr.runs": "Runs {h}",
@@ -487,5 +487,15 @@
  "wish.venue.pool": "By the pool would be perfect.",
  "wish.venue.small": "Something small and intimate.",
  "phone.vowly": "Vowly",
- "book.vip": "VIP"
+ "book.vip": "VIP",
+ "staff.pickRole": "Tap a category to see your team and the candidates for it.",
+ "staff.roleCount": "{n} in this hall · need {need}",
+ "staff.candidatesN": "{n} candidates",
+ "staff.perGuests": "1 per {n} guests",
+ "staff.yourTeam": "Your team",
+ "staff.noneYet": "Nobody in this role yet. Hire from the candidates below.",
+ "staff.noCandidates": "No candidates right now. New ones arrive every few days.",
+ "mgr.yours": "Your managers",
+ "mgr.hire": "Manager candidates",
+ "build.noSpace": "No free space for this item. Move or remove something, or expand the hall."
 }

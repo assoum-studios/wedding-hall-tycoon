@@ -48,7 +48,7 @@ export class World {
 
   // ---------------- Day life: staff working, owner greeting ----------------
   setupDay() {
-    this.mode = 'day'; this.clearPeople(); this.view.applyPlan(null); this.view.setMood(0, 0); this.stage.setDayTime(0.15); this.view.doorTarget = 0;
+    this.mode = 'day'; this.stage.setShift(0); this.clearPeople(); this.view.applyPlan(null); this.view.setMood(0, 0); this.stage.setDayTime(0.15); this.view.doorTarget = 0;
     const h = this.g.hall; const { d, w } = hallDims(h.size); const nav = this.nav;
     this.owner = this.addPerson(this.g.s.owner, new THREE.Vector3(1.5, 0, d / 2 - 2), Math.PI, 'owner'); this.owner.anim = 'pose';
     const staff = staffIn(this.g, this.hallIdx).slice(0, Math.min(24, QUALITY[this.stage.quality].guests / 3));
@@ -121,7 +121,7 @@ export class World {
 
   // ---------------- Owner customization stage (matches the reference image) ----------------
   setupCustomization(male: Look, female: Look) {
-    this.mode = 'custom'; this.clearPeople(); this.stage.setDayTime(0.12); this.view.setMood(0, 0);
+    this.mode = 'custom'; this.clearPeople(); this.stage.setShift(window.innerHeight > window.innerWidth ? 0.27 : 0); this.stage.setDayTime(0.12); this.view.setMood(0, 0);
     const { d } = hallDims(this.g.hall.size); const z = d / 2 + 9;
     const m = this.addPerson(male, new THREE.Vector3(-0.75, 0, z), 0.15, 'owner'); m.anim = 'crossed';
     const f = this.addPerson(female, new THREE.Vector3(0.75, 0, z), -0.15, 'owner'); f.anim = 'pose';
@@ -151,7 +151,7 @@ export class World {
 
   // ---------------- Meeting scene at the reception desk ----------------
   setupMeeting(groom: Look, bride: Look) {
-    this.mode = 'meeting'; this.clearPeople(); this.stage.setDayTime(0.15);
+    this.mode = 'meeting'; this.clearPeople(); this.stage.setShift(window.innerHeight > window.innerWidth ? 0.24 : 0.12); this.stage.setDayTime(0.15);
     // A private office room away from the street, so nothing blocks the view.
     const base = new THREE.Vector3(0, 0, -250);
     const room = new THREE.Group(); room.position.copy(base);
@@ -188,7 +188,7 @@ export class World {
   }
   endMeeting() { this.extra.clear(); this.rig.locked = false; this.setupDay(); this.viewHall(true); }
 
-  startNight(sim: NightSim) { this.clearPeople(); this.mode = 'night'; this.night = new NightDirector(this, sim); }
+  startNight(sim: NightSim) { this.stage.setShift(0); this.clearPeople(); this.mode = 'night'; this.night = new NightDirector(this, sim); }
   endNight() { this.night?.dispose(); this.night = null; this.setupDay(); }
   startBuild() { this.mode = 'build'; this.clearPeople(); this.build = new BuildMode(this); this.rig.topDown = true; const { w, d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 0, 0), Math.max(w, d) * 1.25, 1.5, 0); }
   endBuild() { this.build?.dispose(); this.build = null; this.rig.topDown = false; this.rebuildInterior(); this.setupDay(); this.viewHall(); }
@@ -338,31 +338,53 @@ export class NightDirector {
 // Build mode: place, move, rotate and remove items on the grid, with undo and a top-down view.
 // ======================================================================================
 export class BuildMode {
-  selectedItem: string | null = null; selectedUid: number | null = null; rot = 0; ghost: THREE.Mesh | null = null; grid: THREE.LineSegments;
-  history: { kind: 'add' | 'remove' | 'move'; item: any; before?: any }[] = []; onChange: () => void = () => {};
+  /** item chosen in the bar (to place) or placed item chosen on the floor (to move) */
+  selectedItem: string | null = null; selectedUid: number | null = null; rot = 0;
+  freeSpots = 0; grid: THREE.LineSegments; spots: THREE.InstancedMesh | null = null; selBox: THREE.Mesh | null = null;
+  onChange: () => void = () => {}; onPlace: (it: { id: string; x: number; z: number; rot: number }) => void = () => {}; onMove: (uid: number, x: number, z: number) => void = () => {};
   constructor(public w: World) {
     const h = w.g.hall; const { w: W, d: D } = hallDims(h.size);
     const pts: number[] = []; for (let x = 0; x <= W; x++) pts.push(x - W / 2, 0.05, -D / 2, x - W / 2, 0.05, D / 2); for (let z = 0; z <= D; z++) pts.push(-W / 2, 0.05, z - D / 2, W / 2, 0.05, z - D / 2);
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pts, 3));
-    this.grid = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#3b6fd8', transparent: true, opacity: 0.35 })); w.extra.add(this.grid);
+    this.grid = new THREE.LineSegments(g, new THREE.LineBasicMaterial({ color: '#3b6fd8', transparent: true, opacity: 0.3 })); w.extra.add(this.grid);
   }
-  cellAt(ray: THREE.Raycaster) { const p = new THREE.Vector3(); ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), p); const { w, d } = hallDims(this.w.g.hall.size); return { x: Math.floor(p.x + w / 2), z: Math.floor(p.z + d / 2), p }; }
-  tap(ray: THREE.Raycaster) {
-    const c = this.cellAt(ray); const h = this.w.g.hall;
-    if (this.selectedItem) {
-      const def = ITEM_BY_ID[this.selectedItem]; const it = { uid: -1, id: this.selectedItem, x: c.x - Math.floor((this.rot % 2 ? def.d : def.w) / 2), z: c.z - Math.floor((this.rot % 2 ? def.w : def.d) / 2), rot: this.rot };
-      this.w.g.emit('buildPlace', it); return;
+  /** Footprint of the active item when its centre is on cell (cx, cz). */
+  placementAt(cx: number, cz: number) {
+    const h = this.w.g.hall; let id = this.selectedItem; let rot = this.rot; let skip = -1;
+    if (!id && this.selectedUid != null) { const it = h.layout.find((i) => i.uid === this.selectedUid); if (!it) return null; id = it.id; rot = it.rot; skip = it.uid; }
+    if (!id) return null; const def = ITEM_BY_ID[id]; const fw = rot % 2 ? def.d : def.w, fd = rot % 2 ? def.w : def.d;
+    return { it: { id, x: cx - Math.floor((fw - 1) / 2), z: cz - Math.floor((fd - 1) / 2), rot }, skip };
+  }
+  /** Colours every floor cell: green = the item fits with its centre here, red = it does not. */
+  refreshSpots() {
+    if (this.spots) { this.w.extra.remove(this.spots); this.spots.dispose(); this.spots = null; }
+    if (this.selBox) { this.w.extra.remove(this.selBox); this.selBox = null; }
+    const h = this.w.g.hall; const { w: W, d: D } = hallDims(h.size);
+    if (this.selectedUid != null) { const it = h.layout.find((i) => i.uid === this.selectedUid); if (it) { const f = footprint(it); const c = cellToWorld(h, it.x, it.z).add(new THREE.Vector3(f.w / 2, 0, f.d / 2)); this.selBox = new THREE.Mesh(new THREE.BoxGeometry(f.w + 0.1, 1.4, f.d + 0.1), new THREE.MeshBasicMaterial({ color: '#f2c94c', transparent: true, opacity: 0.35, depthWrite: false })); this.selBox.position.set(c.x, 0.7, c.z); this.w.extra.add(this.selBox); } }
+    if (!this.selectedItem && this.selectedUid == null) return;
+    const mesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(0.86, 0.86).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0.55, depthWrite: false }), W * D);
+    const m = new THREE.Matrix4(); const green = new THREE.Color('#2ecc55'), red = new THREE.Color('#b0503a'); let i = 0; this.freeSpots = 0;
+    for (let z = 0; z < D; z++) for (let x = 0; x < W; x++) {
+      const p = this.placementAt(x, z); const ok = !!p && canPlace(h, { uid: -1, ...p.it }, p.skip);
+      m.makeTranslation(x - W / 2 + 0.5, 1.25, z - D / 2 + 0.5); mesh.setMatrixAt(i, m); mesh.setColorAt(i, ok ? green : red); if (ok) this.freeSpots++; i++;
     }
-    if (this.selectedUid != null) { const cur = h.layout.find((i) => i.uid === this.selectedUid); if (cur) { const f = footprint(cur); this.w.g.emit('buildMove', { uid: cur.uid, x: c.x - Math.floor(f.w / 2), z: c.z - Math.floor(f.d / 2), rot: cur.rot }); } return; }
-    const hits = ray.intersectObjects(this.w.view.pickables, false).find((x) => (x.object as any).pick?.kind === 'item');
-    if (hits) { this.selectedUid = (hits.object as any).pick.uid; this.onChange(); }
+    mesh.renderOrder = 5; this.spots = mesh; this.w.extra.add(mesh);
   }
-  showGhost(valid: boolean, it: { id: string; x: number; z: number; rot: number } | null) {
-    if (this.ghost) { this.w.extra.remove(this.ghost); this.ghost = null; } if (!it) return;
-    const f = footprint({ uid: 0, ...it }); const c = cellToWorld(this.w.g.hall, it.x, it.z).add(new THREE.Vector3(f.w / 2, 0, f.d / 2));
-    this.ghost = new THREE.Mesh(new THREE.BoxGeometry(f.w, 0.3, f.d), new THREE.MeshBasicMaterial({ color: valid ? '#3ccf6e' : '#e53935', transparent: true, opacity: 0.45 })); this.ghost.position.set(c.x, 0.15, c.z); this.w.extra.add(this.ghost);
+  cellAt(ray: THREE.Raycaster) { const p = new THREE.Vector3(); ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.25), p); const { w, d } = hallDims(this.w.g.hall.size); return { x: Math.floor(p.x + w / 2), z: Math.floor(p.z + d / 2) }; }
+  tap(ray: THREE.Raycaster) {
+    const c = this.cellAt(ray); const h = this.w.g.hall; const { w: W, d: D } = hallDims(h.size);
+    if (c.x < 0 || c.z < 0 || c.x >= W || c.z >= D) return;
+    if (this.selectedItem) { const p = this.placementAt(c.x, c.z); if (p) this.onPlace(p.it); return; }
+    if (this.selectedUid != null) {
+      // tapping the selected item again keeps it; tapping another item selects that one; tapping floor moves it
+      const hit = this.itemAt(c.x, c.z);
+      if (hit && hit !== this.selectedUid) { this.selectedUid = hit; this.refreshSpots(); this.onChange(); return; }
+      if (hit === this.selectedUid) return;
+      const p = this.placementAt(c.x, c.z); if (p) this.onMove(this.selectedUid, p.it.x, p.it.z); return;
+    }
+    const hit = this.itemAt(c.x, c.z); if (hit != null) { this.selectedUid = hit; this.refreshSpots(); this.onChange(); }
   }
-  valid(it: { id: string; x: number; z: number; rot: number }, skip = -1) { return canPlace(this.w.g.hall, { uid: -1, ...it }, skip); }
-  dispose() { this.w.extra.remove(this.grid); if (this.ghost) this.w.extra.remove(this.ghost); }
+  itemAt(x: number, z: number) { for (const it of this.w.g.hall.layout) { const f = footprint(it); if (x >= it.x && x < it.x + f.w && z >= it.z && z < it.z + f.d) return it.uid; } return null; }
+  dispose() { this.w.extra.remove(this.grid); if (this.spots) this.w.extra.remove(this.spots); if (this.selBox) this.w.extra.remove(this.selBox); }
 }
 export { PLOT_SLOTS, CFG, staffNeeds };

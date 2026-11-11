@@ -13,21 +13,21 @@ function noise(c: CanvasRenderingContext2D, w: number, h: number, amt: number, n
 export const TEX = {
   marble: () => canvasTex('marble', 512, 512, (c) => {
     // polished cream-and-white marble tiles with gold inlay lines
-    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { c.fillStyle = (x + y) % 2 ? '#f4efe6' : '#fbf8f2'; c.fillRect(x * 256, y * 256, 256, 256); }
+    for (let y = 0; y < 2; y++) for (let x = 0; x < 2; x++) { c.fillStyle = (x + y) % 2 ? '#ddd2bf' : '#e9e0cf'; c.fillRect(x * 256, y * 256, 256, 256); }
     c.strokeStyle = 'rgba(160,150,140,0.22)'; c.lineWidth = 1.2;
     for (let i = 0; i < 40; i++) { c.beginPath(); let px = Math.random() * 512, py = Math.random() * 512; c.moveTo(px, py); for (let k = 0; k < 6; k++) { px += (Math.random() - 0.5) * 120; py += (Math.random() - 0.5) * 120; c.lineTo(px, py); } c.stroke(); }
     c.strokeStyle = '#d9b45a'; c.lineWidth = 3; c.strokeRect(1.5, 1.5, 509, 509); c.beginPath(); c.moveTo(256, 0); c.lineTo(256, 512); c.moveTo(0, 256); c.lineTo(512, 256); c.stroke();
     c.fillStyle = '#d9b45a'; c.save(); c.translate(256, 256); c.rotate(Math.PI / 4); c.fillRect(-14, -14, 28, 28); c.restore();
   }),
   wood: () => canvasTex('wood', 256, 256, (c) => { c.fillStyle = '#9a6a3e'; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 70; i++) { c.strokeStyle = `rgba(60,30,10,${Math.random() * 0.25})`; c.beginPath(); const y = Math.random() * 256; c.moveTo(0, y); c.bezierCurveTo(80, y + 6, 160, y - 6, 256, y); c.stroke(); } for (let i = 0; i < 8; i++) { c.fillStyle = 'rgba(0,0,0,0.12)'; c.fillRect(0, i * 32, 256, 1.5); } }),
-  grass: () => canvasTex('grass', 256, 256, (c) => { c.fillStyle = '#7dbb55'; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 6000; i++) { c.fillStyle = `hsl(${90 + Math.random() * 25},${45 + Math.random() * 20}%,${35 + Math.random() * 25}%)`; c.fillRect(Math.random() * 256, Math.random() * 256, 1.5, 3); } }),
-  sand: () => canvasTex('sand', 256, 256, (c) => { c.fillStyle = '#efd9a7'; c.fillRect(0, 0, 256, 256); noise(c, 256, 256, 0.12, 9000); }),
+  grass: () => canvasTex('grass', 256, 256, (c) => { c.fillStyle = '#5b8f3a'; c.fillRect(0, 0, 256, 256); for (let i = 0; i < 6000; i++) { c.fillStyle = `hsl(${88 + Math.random() * 25},${40 + Math.random() * 20}%,${26 + Math.random() * 20}%)`; c.fillRect(Math.random() * 256, Math.random() * 256, 1.5, 3); } }),
+  sand: () => canvasTex('sand', 256, 256, (c) => { c.fillStyle = '#d9bf8a'; c.fillRect(0, 0, 256, 256); noise(c, 256, 256, 0.12, 9000); }),
   snow: () => canvasTex('snow', 128, 128, (c) => { c.fillStyle = '#f3f7fb'; c.fillRect(0, 0, 128, 128); noise(c, 128, 128, 0.05, 2000); }),
   asphalt: () => canvasTex('asphalt', 256, 256, (c) => { c.fillStyle = '#55585e'; c.fillRect(0, 0, 256, 256); noise(c, 256, 256, 0.15, 9000); }),
-  paving: () => canvasTex('paving', 256, 256, (c) => { c.fillStyle = '#e4dccb'; c.fillRect(0, 0, 256, 256); c.strokeStyle = 'rgba(120,110,90,0.35)'; c.lineWidth = 2; for (let i = 0; i <= 8; i++) { c.beginPath(); c.moveTo(i * 32, 0); c.lineTo(i * 32, 256); c.moveTo(0, i * 32); c.lineTo(256, i * 32); c.stroke(); } noise(c, 256, 256, 0.06, 3000); }),
+  paving: () => canvasTex('paving', 256, 256, (c) => { c.fillStyle = '#b8ae9c'; c.fillRect(0, 0, 256, 256); c.strokeStyle = 'rgba(80,70,55,0.35)'; c.lineWidth = 2; for (let i = 0; i <= 8; i++) { c.beginPath(); c.moveTo(i * 32, 0); c.lineTo(i * 32, 256); c.moveTo(0, i * 32); c.lineTo(256, i * 32); c.stroke(); } noise(c, 256, 256, 0.06, 3000); }),
   carpet: () => canvasTex('carpet', 128, 256, (c) => { c.fillStyle = '#b3122e'; c.fillRect(0, 0, 128, 256); noise(c, 128, 256, 0.08, 3000); c.fillStyle = '#e1b84d'; c.fillRect(0, 0, 8, 256); c.fillRect(120, 0, 8, 256); }),
   stone: () => canvasTex('stone', 256, 256, (c) => { c.fillStyle = '#9d978d'; c.fillRect(0, 0, 256, 256); for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { c.fillStyle = `hsl(35,${6 + Math.random() * 6}%,${52 + Math.random() * 14}%)`; c.fillRect(x * 64 + (y % 2) * 32 + 2, y * 32 + 2, 60, 28); } noise(c, 256, 256, 0.08, 3000); }),
-  wallpaper: () => canvasTex('wallpaper', 256, 256, (c) => { c.fillStyle = '#f6ecd8'; c.fillRect(0, 0, 256, 256); c.strokeStyle = 'rgba(205,170,100,0.35)'; c.lineWidth = 2; for (let x = 0; x < 256; x += 64) for (let y = 0; y < 256; y += 64) { c.beginPath(); c.ellipse(x + 32, y + 32, 14, 22, 0, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(x + 32, y + 32, 4, 0, Math.PI * 2); c.stroke(); } }),
+  wallpaper: () => canvasTex('wallpaper', 256, 256, (c) => { c.fillStyle = '#e3cfab'; c.fillRect(0, 0, 256, 256); c.strokeStyle = 'rgba(170,130,60,0.4)'; c.lineWidth = 2; for (let x = 0; x < 256; x += 64) for (let y = 0; y < 256; y += 64) { c.beginPath(); c.ellipse(x + 32, y + 32, 14, 22, 0, 0, Math.PI * 2); c.stroke(); c.beginPath(); c.arc(x + 32, y + 32, 4, 0, Math.PI * 2); c.stroke(); } }),
   windows: (lit: boolean) => canvasTex('win' + lit, 128, 256, (c) => { c.fillStyle = '#d8d2c6'; c.fillRect(0, 0, 128, 256); for (let y = 0; y < 8; y++) for (let x = 0; x < 4; x++) { const on = lit && Math.random() < 0.55; c.fillStyle = on ? `hsl(45,90%,${70 + Math.random() * 15}%)` : '#5f7c96'; c.fillRect(x * 32 + 6, y * 32 + 6, 20, 22); c.fillStyle = 'rgba(255,255,255,0.25)'; if (!on) c.fillRect(x * 32 + 6, y * 32 + 6, 8, 22); } }),
   glassTower: (lit: boolean) => canvasTex('tower' + lit, 128, 512, (c) => { c.fillStyle = '#7f98b5'; c.fillRect(0, 0, 128, 512); for (let y = 0; y < 32; y++) for (let x = 0; x < 6; x++) { const on = lit && Math.random() < 0.45; c.fillStyle = on ? `hsl(48,80%,${68 + Math.random() * 20}%)` : `hsl(210,25%,${42 + Math.random() * 15}%)`; c.fillRect(x * 21 + 2, y * 16 + 2, 18, 12); } }),
   sign: (text: string, bg = '#1f3c88', fg = '#ffe9a8') => canvasTex('sign' + text + bg, 512, 128, (c) => {
@@ -45,12 +45,12 @@ export const TEX = {
 // Shared materials. Theme-tinted ones are recolored live when the plan changes.
 const M = THREE.MeshStandardMaterial;
 export const MAT = {
-  cream: new M({ color: '#f4e6cc', roughness: 0.8 }),
-  creamLight: new M({ color: '#fbf3e3', roughness: 0.75 }),
+  cream: new M({ color: '#dcc6a0', roughness: 0.8 }),
+  creamLight: new M({ color: '#e6d8bd', roughness: 0.75 }),
   gold: new M({ color: '#d9ad45', roughness: 0.28, metalness: 0.85 }),
   goldSoft: new M({ color: '#e2bf68', roughness: 0.45, metalness: 0.6 }),
-  white: new M({ color: '#ffffff', roughness: 0.6 }),
-  cloth: new M({ color: '#fffdf8', roughness: 0.9 }),
+  white: new M({ color: '#f1ede4', roughness: 0.55 }),
+  cloth: new M({ color: '#f2ede2', roughness: 0.9 }),
   red: new M({ color: '#b3122e', roughness: 0.85 }),
   dark: new M({ color: '#25262b', roughness: 0.6 }),
   black: new M({ color: '#111114', roughness: 0.35, metalness: 0.2 }),
@@ -72,7 +72,7 @@ export const MAT = {
   grass: new M({ color: '#ffffff', roughness: 0.95 }),
   sand: new M({ color: '#ffffff', roughness: 0.95 }),
   stone: new M({ color: '#ffffff', roughness: 0.85 }),
-  marble: new M({ color: '#ffffff', roughness: 0.12, metalness: 0.05 }),
+  marble: new M({ color: '#ffffff', roughness: 0.22, metalness: 0.0 }),
   wallpaper: new M({ color: '#ffffff', roughness: 0.85 }),
   lineWhite: new M({ color: '#f5f5f5', roughness: 0.8 }),
   lineYellow: new M({ color: '#f2c94c', roughness: 0.8 }),
@@ -82,8 +82,8 @@ export const MAT = {
   themeFlower: new M({ color: '#ffffff', roughness: 0.6 }),
   themeAccent: new M({ color: '#d9c39a', roughness: 0.5, metalness: 0.3 }),
   themeDrape: new M({ color: '#f3ead8', roughness: 0.9, side: THREE.DoubleSide }),
-  chair: new M({ color: '#f4efe4', roughness: 0.5 }),
-  wallTint: new M({ color: '#f4e6cc', roughness: 0.85 }),
+  chair: new M({ color: '#e3d9c4', roughness: 0.5 }),
+  wallTint: new M({ color: '#dfc9a3', roughness: 0.85 }),
 };
 let texturesApplied = false;
 export function applyTextures() {

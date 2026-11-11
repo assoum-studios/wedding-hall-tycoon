@@ -63,8 +63,8 @@ export function walkFactor(hall: HallState) {
 }
 
 /** Builds a sensible default layout for the hall size: stage, dance floor, bar, buffet, then tables. */
-export function autoLayout(hall: HallState): PlacedItem[] {
-  const { w, d, cap } = hallDims(hall.size);
+export function autoLayout(hall: HallState, fill = 0.8): PlacedItem[] {
+  const { w, d } = hallDims(hall.size); const cap = Math.round(hallDims(hall.size).cap * fill);
   const tmp: HallState = { ...hall, layout: [] };
   let uid = 1;
   const put = (id: string, x: number, z: number, rot = 0) => { const it = { uid: uid++, id, x, z, rot }; if (canPlace(tmp, it)) { tmp.layout.push(it); return true; } return false; };
@@ -84,7 +84,10 @@ export function autoLayout(hall: HallState): PlacedItem[] {
   return tmp.layout;
 }
 export function ensureLayout(hall: HallState) {
-  if (!hall.layout.length) { hall.layout = autoLayout(hall); hall.nextUid = hall.layout.length + 1; }
+  const { w } = hallDims(hall.size); const hx = hall as any;
+  // Saves from before the roomier hall sizes get a fresh layout once; later layouts are always kept.
+  if (!hall.layout.length || (hx.lw !== undefined && hx.lw !== w && !hx.expanding) || hx.lw === undefined) { if (hx.lw !== w || !hall.layout.length) { hall.layout = autoLayout(hall); hall.nextUid = hall.layout.length + 1; } }
+  hx.lw = w; delete hx.expanding;
   // Drop anything that no longer fits (e.g. after loading an older save).
   const keep: PlacedItem[] = []; const tmp: HallState = { ...hall, layout: keep };
   for (const it of hall.layout) if (canPlace(tmp, it)) keep.push(it);

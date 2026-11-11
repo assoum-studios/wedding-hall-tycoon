@@ -19,10 +19,10 @@ export function upgradeProblemMult(g: Game, hallIdx: number, id: string | null) 
 export function expandCost(g: Game, hallIdx: number) { const h = g.s.halls[hallIdx]; const next = HALLS.sizes[h.size + 1]; return next ? Math.round(next.cost * (1 + hallIdx * 0.5)) : null; }
 export function expand(g: Game, hallIdx: number) {
   const h = g.s.halls[hallIdx]; const c = expandCost(g, hallIdx); if (c == null || g.s.money < c) return false;
-  g.addMoney(-c); h.size++;
+  g.addMoney(-c); h.size++; (h as any).expanding = true;
   // Keep the player's layout, then add tables to fill the new space.
   const before = h.layout.length; ensureLayout(h);
-  const fresh = autoLayout(h); const { cap } = hallDims(h.size);
+  const fresh = autoLayout(h, 1); const { cap } = hallDims(h.size);
   let seatsNow = h.layout.reduce((s, it) => s + (ITEM_BY_ID[it.id]?.seats ?? 0), 0);
   for (const it of fresh) { if (seatsNow >= cap) break; if (ITEM_BY_ID[it.id].kind !== 'table') continue; const n = { ...it, uid: h.nextUid++ }; if (canPlace(h, n)) { h.layout.push(n); seatsNow += ITEM_BY_ID[it.id].seats; } }
   void before;

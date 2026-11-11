@@ -26,7 +26,7 @@ import { Tutorial } from './tutorial';
 import { openBuild } from './buildUI';
 
 export class App {
-  g: Game; world: World; hud = h('div'); overlay = div('overlay-layer'); nightUI: HTMLElement | null = null; tutorial: Tutorial | null = null;
+  g: Game; world: World; hud = h('div', { class: 'hud-root' }); overlay = div('overlay-layer'); nightUI: HTMLElement | null = null; tutorial: Tutorial | null = null;
   night: { sim: NightSim; speed: number; bubbles: Map<number, HTMLElement>; moment: HTMLElement | null; ended: boolean } | null = null;
   private saveTimer = 0;
   constructor(canvas: HTMLCanvasElement) {
@@ -90,12 +90,11 @@ export class App {
     const monthName = t('month.' + d.month);
     const top = div('hud-top',
       h('div', { class: 'stat money-stat' }, h('span', { class: 'ico money' }, ic('coin')), h('span', { class: s.money < 0 ? 'neg' : '' }, money(s.money))),
-      h('div', { class: 'stat', onClick: () => openGoals(this, 'chapter') }, h('span', { class: 'ico rep' }, ic('star')), stars(g.stars())),
+      h('div', { class: 'stat rep-stat', onClick: () => openGoals(this, 'chapter') }, stars(g.stars())),
       h('div', { class: 'stat hide-sm' }, h('span', { class: 'ico fol' }, ic('heart')), num(s.followers)),
-      h('div', { class: 'stat' }, h('span', { class: 'ico day' }, ic('cal')), t('hud.date', { d: d.dom, m: monthName, y: d.year })),
+      h('div', { class: 'stat date-stat' }, h('span', { class: 'ico day' }, ic('cal')), t('hud.dateShort', { d: d.dom, m: monthName })),
       h('div', { class: 'hud-right' },
-        btn([ic('phone'), unreadCount(g) ? h('span', { class: 'badge' }, String(unreadCount(g))) : null], () => openPhone(this), 'icon-btn', { 'aria-label': t('phone.title'), id: 'btn-phone' }),
-        btn([ic('lang'), h('span', { style: { fontSize: '13px' } }, getLang() === 'en' ? 'ع' : 'EN')], () => { setLang(getLang() === 'en' ? 'ar' : 'en'); }, 'icon-btn gold', { 'aria-label': t('settings.language') })));
+        btn([ic('phone'), unreadCount(g) ? h('span', { class: 'badge' }, String(unreadCount(g))) : null], () => openPhone(this), 'icon-btn', { 'aria-label': t('phone.title'), id: 'btn-phone' })));
     const wed = weddingToday(g); const claim = claimableCount(g);
     const mainLabel = wed ? t('dock.startWedding') : t('dock.nextDay');
     const dock = div('dock',
@@ -104,11 +103,7 @@ export class App {
       g.unlocked('goals') ? this.dockBtn('trophy', t('dock.goals'), () => openGoals(this), claim, 'btn-goals') : null,
       g.unlocked('build') ? this.dockBtn('hammer', t('dock.build'), () => openBuild(this), 0, 'btn-build') : null,
       h('div', { class: 'main-action' }, btn([ic(wed ? 'play' : 'next'), mainLabel], () => this.mainAction(), (wed ? 'green' : 'gold') + ' big', { id: 'btn-main' })));
-    const cams = div('cam-btns',
-      btn(ic('plus'), () => this.world.rig.zoom(0.75), '', { 'aria-label': t('cam.zoomIn') }), btn(ic('minus'), () => this.world.rig.zoom(1.33), '', { 'aria-label': t('cam.zoomOut') }),
-      btn(ic('rotL'), () => this.world.rig.rotate(0.6), '', { 'aria-label': t('cam.rotateLeft') }), btn(ic('rotR'), () => this.world.rig.rotate(-0.6), '', { 'aria-label': t('cam.rotateRight') }),
-      btn(ic('center'), () => this.world.viewHall(), '', { 'aria-label': t('cam.recenter') }), btn(ic('home'), () => this.world.viewNeighborhood(), '', { 'aria-label': t('cam.neighborhood') }));
-    this.hud.replaceChildren(top, dock, cams);
+    this.hud.replaceChildren(top, dock);
     this.tutorial?.decorate();
   }
   dockBtn(icon: any, label: string, onClick: () => void, badge = 0, id = '') { return h('button', { class: 'dock-btn', onClick, id }, ic(icon), label, badge ? h('span', { class: 'badge' }, String(badge)) : null); }
@@ -155,9 +150,9 @@ export class App {
     const happy = h('span', {}, '');
     const speedBtn = btn([ic('speed'), '1×'], () => { n.speed = n.speed === 1 ? 2 : n.speed === 2 ? 3 : 1; speedBtn.lastChild!.textContent = n.speed + '×'; }, 'small ghost');
     const skipBtn = btn([ic('skip'), t('night.skip')], () => this.skipNight(), 'small red', { id: 'btn-skip' });
-    const ui = div('', div('phasebar', progress, steps),
+    const ui = div('hud-root', div('phasebar', progress, steps),
       h('div', { class: 'hud-top' }, h('div', { class: 'stat money-stat' }, h('span', { class: 'ico money' }, ic('coin')), h('span', { class: 'm' }, money(this.g.s.money))), h('div', { class: 'stat happy-stat' }, h('span', { class: 'ico rep' }, ic('heart')), happy), h('div', { class: 'hud-right' }, speedBtn, skipBtn)),
-      div('cam-btns', btn(ic('plus'), () => this.world.rig.zoom(0.75)), btn(ic('minus'), () => this.world.rig.zoom(1.33)), btn(ic('rotL'), () => this.world.rig.rotate(0.6)), btn(ic('rotR'), () => this.world.rig.rotate(-0.6)), btn(ic('center'), () => { this.world.autoCam = true; this.world.viewHall(); })));
+    );
     (ui as any).refs = { progress: progress.firstChild, steps, happy, money: ui.querySelector('.m') };
     uiRoot().append(ui); this.nightUI = ui; void sim;
   }

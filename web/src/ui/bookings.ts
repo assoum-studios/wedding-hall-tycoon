@@ -72,23 +72,34 @@ export function meeting(app: App, r: ClientRequest) {
 export function invoice(app: App, r: ClientRequest, done: () => void) {
   const g = app.g; let lines = invoiceLines(g, r); let level = 1.2;
   const m = modal(t('inv.title'), [], { cls: 'narrow', onClose: () => done() });
-  const render = () => {
+  // The slider only updates numbers in place (re-drawing the window would interrupt the finger drag).
+  const priceCells: { el: HTMLElement; l: InvoiceLine }[] = []; const lvlEl = h('b', {}); const totEl = h('b', { class: 'money' }); const costEl = h('b', {}); const profEl = h('b', {}); const depEl = h('b', {});
+  const update = () => {
     const tt = invoiceTotals(lines, level); const profit = tt.total - tt.cost;
+    for (const c of priceCells) c.el.textContent = money(c.l.price * level);
+    lvlEl.textContent = Math.round(level * 100) + '%'; totEl.textContent = money(tt.total); costEl.textContent = money(tt.cost);
+    profEl.textContent = money(profit); profEl.className = profit < 0 ? 'neg' : 'money'; depEl.textContent = money(tt.total * CFG.pricing.depositShare);
+  };
+  const slider = h('input', { type: 'range', class: 'price-slider', min: String(CFG.pricing.priceLevelMin * 100), max: String(CFG.pricing.priceLevelMax * 100), step: '1', value: String(Math.round(level * 100)), id: 'price-level' }) as HTMLInputElement;
+  slider.addEventListener('input', () => { level = Number(slider.value) / 100; update(); });
+  for (const ev of ['pointerdown', 'pointermove', 'touchstart', 'touchmove']) slider.addEventListener(ev, (e) => e.stopPropagation(), { passive: true });
+  const render = () => {
+    priceCells.length = 0;
     m.setBody([
       h('div', { class: 'sub', style: { marginBottom: '6px' } }, t('inv.help')),
       h('div', { class: 'inv-line', style: { fontWeight: '900' } }, h('span', { style: { width: '28px' } }), h('span', { class: 'grow' }, t('inv.item')), h('span', { style: { width: '80px', textAlign: 'end' } }, t('inv.cost')), h('span', { style: { width: '84px', textAlign: 'end' } }, t('inv.price'))),
-      ...lines.map((l) => h('div', { class: 'inv-line' + (l.on ? '' : ' off') },
+      ...lines.map((l) => { const pe = h('b', { style: { width: '84px', textAlign: 'end' } }); priceCells.push({ el: pe, l }); return h('div', { class: 'inv-line' + (l.on ? '' : ' off') },
         l.fixed ? h('span', { style: { width: '28px' } }, '🔒') : h('button', { class: 'chk' + (l.on ? ' on' : ''), disabled: !l.available, onClick: () => { l.on = !l.on; render(); }, 'aria-label': L(l.label) }),
-        h('span', { class: 'grow' }, L(l.label), !l.available ? h('div', { class: 'sub' }, t('inv.needs')) : null), h('span', { class: 'sub', style: { width: '80px', textAlign: 'end' } }, money(l.cost)), h('b', { style: { width: '84px', textAlign: 'end' } }, money(l.price * level)))),
+        h('span', { class: 'grow' }, L(l.label), !l.available ? h('div', { class: 'sub' }, t('inv.needs')) : null), h('span', { class: 'sub', style: { width: '80px', textAlign: 'end' } }, money(l.cost)), pe); }),
       h('div', { class: 'card', style: { marginTop: '10px' } },
-        h('div', { class: 'row' }, h('b', {}, t('inv.priceLevel')), h('span', { class: 'grow' }), h('b', {}, Math.round(level * 100) + '%')),
-        (() => { const s = h('input', { type: 'range', min: String(CFG.pricing.priceLevelMin * 100), max: String(CFG.pricing.priceLevelMax * 100), step: '5', value: String(Math.round(level * 100)), id: 'price-level' }) as HTMLInputElement; s.addEventListener('input', () => { level = Number(s.value) / 100; render(); }); return s; })(),
-        h('div', { class: 'list-line' }, h('span', {}, t('inv.total')), h('b', { class: 'money' }, money(tt.total))),
-        h('div', { class: 'list-line' }, h('span', {}, t('inv.yourCost')), h('b', {}, money(tt.cost))),
-        h('div', { class: 'list-line' }, h('span', {}, t('inv.profit')), h('b', { class: profit < 0 ? 'neg' : 'money' }, money(profit))),
-        h('div', { class: 'list-line' }, h('span', {}, t('inv.deposit')), h('b', {}, money(tt.total * CFG.pricing.depositShare)))),
-      h('div', { class: 'row', style: { justifyContent: 'flex-end' } }, btn(t('ui.cancel'), () => m.close(), 'ghost'), btn([ic('check'), t('inv.send')], () => send(tt.total, tt.removed), 'green', { id: 'inv-send' })),
+        h('div', { class: 'row' }, h('b', {}, t('inv.priceLevel')), h('span', { class: 'grow' }), lvlEl), slider,
+        h('div', { class: 'list-line' }, h('span', {}, t('inv.total')), totEl),
+        h('div', { class: 'list-line' }, h('span', {}, t('inv.yourCost')), costEl),
+        h('div', { class: 'list-line' }, h('span', {}, t('inv.profit')), profEl),
+        h('div', { class: 'list-line' }, h('span', {}, t('inv.deposit')), depEl)),
+      h('div', { class: 'row', style: { justifyContent: 'flex-end' } }, btn(t('ui.cancel'), () => m.close(), 'ghost'), btn([ic('check'), t('inv.send')], () => { const tt = invoiceTotals(lines, level); send(tt.total, tt.removed); }, 'green', { id: 'inv-send' })),
     ]);
+    update();
   };
   const send = (total: number, removed: number) => {
     const res = evaluateOffer(g, r, total, removed);

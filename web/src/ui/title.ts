@@ -16,7 +16,7 @@ let screenEl: HTMLElement | null = null;
 function setScreen(el: HTMLElement | null) { screenEl?.remove(); screenEl = el; if (el) uiRoot().append(el); }
 
 export function showTitle(app: App) {
-  app.world.mode = 'title'; app.world.rig.locked = false; app.world.stage.setDayTime(0.1);
+  app.world.mode = 'title'; app.world.rig.locked = false; app.world.stage.setShift(0); app.world.stage.setDayTime(0.1);
   // slow orbit behind the title
   const orbit = () => { if (app.world.mode === 'title') { app.world.rig.goal.yaw += 0.0008; requestAnimationFrame(orbit); } };
   app.world.rig.flyTo(new THREE.Vector3(0, 3, 10), 48, 0.32, -0.4); orbit();
@@ -45,7 +45,7 @@ function pickDifficulty(app: App, slot: number) {
 
 /** Four illustrated story pages, staged with the 3D world. */
 function story(app: App, slot: number, diff: Difficulty, page: number) {
-  const w = app.world; w.mode = 'story'; w.clearPeople(); const { d } = hallDims(w.g.hall.size);
+  const w = app.world; w.mode = 'story'; w.stage.setShift(0); w.clearPeople(); const { d } = hallDims(w.g.hall.size);
   const rosa: Look = { gender: 'f', body: 'elderly', skin: 1, hair: 3, hairColor: 5, outfit: 9, color: 4, acc: ['glasses', 'necklace'], c: '#7a2a4a', c2: '#d9b45a' };
   const victor: Look = { gender: 'm', skin: 0, hair: 2, hairColor: 6, outfit: 1, color: 1, acc: ['watch'], beard: 2, c: '#2a2a33', c2: '#7a1f2b' };
   switch (page) {
@@ -103,7 +103,7 @@ export function customize(app: App, slot: number, diff: Difficulty) {
   };
   const first = render();
   const startBtn = h('div', { class: 'start-btn' }, btn([h('span', { style: { fontSize: '28px' } }, '👑'), t('custom.start')], () => {
-    w.rig.locked = false; setScreen(null);
+    w.rig.locked = false; w.stage.setShift(0); setScreen(null);
     const owner = gender === 'm' ? male : female; const s = newGameState(slot, diff, owner, '');
     s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = app.g.s.settings.quality;
     app.startNew(slot, s, true);

@@ -3,7 +3,7 @@ import type { App } from './app';
 import type { Employee, Candidate } from '../core/types';
 import { t, L, money, num, setLang, getLang } from '../core/i18n';
 import { STAFF, ROLE_BY_ID, BIZ, HALLS, PLOT_BY_ID, CFG } from '../core/data';
-import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor } from '../staff/staff';
+import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor, staffNeeds } from '../staff/staff';
 import { launch, active as campaignActive, marketingBoost } from '../business/marketing';
 import { buy, equip, item as shopItem } from '../business/shop';
 import { take, canTake, payOff, payoffAmount, owed, loanDef, loanRate, payRosaDebt } from '../business/loans';
@@ -33,14 +33,31 @@ const skillStars = (n: number) => '★'.repeat(Math.round(n)) + '☆'.repeat(5 -
 function moraleBar(e: Employee) { return h('div', { style: { minWidth: '90px' } }, h('div', { class: 'sub' }, t('staff.morale', { n: Math.round(e.morale) })), bar(e.morale / 100, e.morale < 35 ? 'red' : '')); }
 function hallName(app: App, i: number) { return app.g.s.halls[i].name; }
 
+const ROLE_ICON: Record<string, string> = { waiter: '🍽️', cook: '👨‍🍳', cleaner: '🧹', security: '🛡️', bartender: '🍹', decorator: '💐', sound_tech: '🎛️', valet: '🚗', host: '🤝', social: '📱', manager: '📋' };
+let openRole: string | null = null;
+/** Staff: one card per category; each category opens its own page with your team and its candidates. */
 function staffView(app: App, rerender: () => void, focus?: string) {
-  const g = app.g; const out: Node[] = [];
-  out.push(h('div', { class: 'row wrap', style: { marginBottom: '8px' } }, h('span', { class: 'pill blue' }, t('staff.count', { n: g.s.staff.length })), h('span', { class: 'pill' }, t('staff.payroll', { m: money(g.s.staff.reduce((a, e) => a + e.wage, 0) * 7) }))));
-  const emps = [...g.s.staff].sort((a, b) => (a.id === focus ? -1 : b.id === focus ? 1 : a.role.localeCompare(b.role)));
-  out.push(div('grid2', ...emps.map((e) => empCard(app, e, rerender, e.id === focus))));
-  out.push(h('div', { class: 'panel-head', style: { borderRadius: '14px', margin: '14px 0 8px' } }, t('staff.candidates'), h('span', { class: 'grow' }), h('span', { style: { fontSize: '14px' } }, t('staff.refreshIn', { n: Math.max(0, CFG.time.candidateRefreshDays - (g.s.day - g.s.candidatesDay)) }))));
-  out.push(div('grid2', ...g.s.candidates.map((c) => candCard(app, c, rerender))));
-  return out;
+  const g = app.g;
+  if (focus) { const e = g.s.staff.find((x) => x.id === focus); if (e) openRole = e.role === 'manager' ? null : e.role; }
+  const roles = STAFF.roles.filter((r: any) => r.id !== 'manager');
+  if (!openRole || !roles.some((r: any) => r.id === openRole)) {
+    const need = staffNeeds(g, g.s.activeHall, Math.max(80, capacity(g.hall)));
+    return [h('div', { class: 'row wrap', style: { marginBottom: '8px' } }, h('span', { class: 'pill blue' }, t('staff.count', { n: g.s.staff.length })), h('span', { class: 'pill' }, t('staff.payroll', { m: money(g.s.staff.reduce((a, e) => a + e.wage, 0) * 7) }))),
+      h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('staff.pickRole')),
+      div('grid3', ...roles.map((r: any) => {
+        const team = g.s.staff.filter((e) => e.role === r.id); const here = team.filter((e) => e.hall === g.s.activeHall).length; const cands = g.s.candidates.filter((c) => c.role === r.id).length; const n = need[r.id] ?? 0;
+        const low = n > here; const asking = team.some((e) => e.askedRaise || e.morale < 35);
+        return h('button', { class: 'card role-card' + (low ? ' hl' : ''), 'data-role': r.id, onClick: () => { openRole = r.id; rerender(); } },
+          h('div', { style: { fontSize: '30px' } }, ROLE_ICON[r.id] ?? '👤'), h('div', { class: 'title' }, L(r)),
+          h('div', { class: 'sub' }, t('staff.roleCount', { n: here, need: n })), cands ? h('span', { class: 'pill green' }, t('staff.candidatesN', { n: cands })) : null, asking ? h('span', { class: 'pill red' }, '!') : null);
+      }))];
+  }
+  const r = STAFF.roles.find((x: any) => x.id === openRole); const team = g.s.staff.filter((e) => e.role === openRole).sort((a, b) => (a.id === focus ? -1 : b.id === focus ? 1 : b.skill - a.skill));
+  const cands = g.s.candidates.filter((c) => c.role === openRole);
+  return [h('div', { class: 'row', style: { marginBottom: '8px' } }, btn('‹ ' + t('ui.back'), () => { openRole = null; rerender(); }, 'small ghost', { id: 'role-back' }), h('div', { class: 'title grow' }, (ROLE_ICON[openRole!] ?? '') + ' ' + L(r)), h('span', { class: 'sub' }, t('staff.perGuests', { n: r.perGuests || '-' }))),
+    h('div', { class: 'title', style: { margin: '6px 0' } }, t('staff.yourTeam')), team.length ? div('grid2', ...team.map((e) => empCard(app, e, rerender, e.id === focus))) : h('div', { class: 'empty' }, t('staff.noneYet')),
+    h('div', { class: 'panel-head', style: { borderRadius: '14px', margin: '14px 0 8px' } }, t('staff.candidates'), h('span', { class: 'grow' }), h('span', { style: { fontSize: '14px' } }, t('staff.refreshIn', { n: Math.max(0, CFG.time.candidateRefreshDays - (g.s.day - g.s.candidatesDay)) }))),
+    cands.length ? div('grid2', ...cands.map((c) => candCard(app, c, rerender))) : h('div', { class: 'empty' }, t('staff.noCandidates'))];
 }
 function empCard(app: App, e: Employee, rerender: () => void, hl = false) {
   const g = app.g; const role = ROLE_BY_ID[e.role]; const fair = wageFor(e.role, e.skill);
@@ -66,18 +83,24 @@ function candCard(app: App, c: Candidate, rerender: () => void) {
 import { CONTENT } from '../core/data';
 function quoteFor(c: Candidate) { const q = CONTENT.candidateQuotes[c.trait]; return q ? q[0] : ['', '']; }
 
+/** Managers have their own section: your managers (toggles, hall, train, raise, let go) and manager candidates to interview and hire. */
 function managersView(app: App, rerender: () => void) {
-  const g = app.g; const mgrs = g.s.staff.filter((e) => e.role === 'manager');
-  if (!mgrs.length) return [h('div', { class: 'empty' }, t('mgr.none'))];
-  return [h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('mgr.help')), div('grid2', ...mgrs.map((e) => {
+  const g = app.g; const mgrs = g.s.staff.filter((e) => e.role === 'manager'); const cands = g.s.candidates.filter((c) => c.role === 'manager');
+  return [h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('mgr.help')), h('div', { class: 'title', style: { margin: '6px 0' } }, t('mgr.yours')),
+    mgrs.length ? div('grid2', ...mgrs.map((e) => {
     const hallIdx = g.s.halls.findIndex((x) => x.managerId === e.id); const tg = e.toggles!;
     const tline = (k: keyof typeof tg, label: string) => h('div', { class: 'row', style: { margin: '6px 0' } }, h('span', { class: 'grow' }, label), toggle(tg[k], (v) => { tg[k] = v; }));
     return h('div', { class: 'card' }, h('div', { class: 'row' }, h('div', { class: 'avatar' }, h('img', { src: app.world.renderThumb(e.look, { face: true, size: 96 }) })), h('div', { class: 'grow' }, h('div', { class: 'title' }, L(e.name)), h('div', { class: 'sub' }, hallIdx >= 0 ? t('mgr.runs', { h: hallName(app, hallIdx) }) : t('mgr.spare'))), h('span', { class: 'stars' }, skillStars(e.skill))),
+      h('div', { class: 'row', style: { margin: '6px 0' } }, moraleBar(e), h('div', { class: 'grow sub' }, t('staff.wage', { m: money(e.wage) }))),
       h('div', { class: 'sub' }, t('mgr.fixChance', { p: Math.round(Math.min(0.95, CFG.night.managerChanceSkill1 + (e.skill - 1) * CFG.night.managerChancePerSkill) * 100) })),
       tline('run', t('mgr.run')), tline('fix', t('mgr.fix')), tline('plan', t('mgr.plan')), tline('accept', t('mgr.accept')),
       h('div', { class: 'row wrap' }, hallIdx !== g.s.activeHall ? btn(t('mgr.makeManager', { h: hallName(app, g.s.activeHall) }), () => { setManager(g, g.s.activeHall, e.id); rerender(); }, 'small') : null,
+        e.skill < 5 ? btn(t('staff.train', { m: money(trainCost(e)) }), () => { if (train(g, e)) sfx('success'); else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small') : null,
+        btn(t('staff.raise'), () => { raise(g, e); rerender(); }, 'small gold'),
         btn(t('staff.fire'), () => confirmBox(t('staff.fireConfirm', { n: L(e.name) }), t('staff.fire'), () => { fire(g, e.id); toast(t('staff.fired', { n: L(e.name) }), 'info'); rerender(); }), 'small red', { 'data-fire': e.id })));
-  }))];
+  })) : h('div', { class: 'empty' }, t('mgr.none')),
+    h('div', { class: 'panel-head', style: { borderRadius: '14px', margin: '14px 0 8px' } }, t('mgr.hire'), h('span', { class: 'grow' }), h('span', { style: { fontSize: '14px' } }, t('staff.refreshIn', { n: Math.max(0, CFG.time.candidateRefreshDays - (g.s.day - g.s.candidatesDay)) }))),
+    cands.length ? div('grid2', ...cands.map((c) => candCard(app, c, rerender))) : h('div', { class: 'empty' }, t('staff.noCandidates'))];
 }
 
 function marketingView(app: App, rerender: () => void) {

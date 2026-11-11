@@ -38,12 +38,12 @@ export class Stage {
   private last = performance.now(); fps = 60; private fpsAcc = 0; private fpsN = 0;
   constructor(public canvas: HTMLCanvasElement) {
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, powerPreference: 'high-performance', preserveDrawingBuffer: false });
-    this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 1.05;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace; this.renderer.toneMapping = THREE.ACESFilmicToneMapping; this.renderer.toneMappingExposure = 0.92;
     this.renderer.shadowMap.enabled = true; this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     this.camera = new THREE.PerspectiveCamera(45, 1, 0.3, 900);
-    this.hemi = new THREE.HemisphereLight('#cfe8ff', '#e8d8b8', 0.9); this.scene.add(this.hemi);
+    this.hemi = new THREE.HemisphereLight('#bcd6f0', '#6e5f48', 0.55); this.scene.add(this.hemi);
     this.ambient = new THREE.AmbientLight('#ffffff', 0.15); this.scene.add(this.ambient);
-    this.sun = new THREE.DirectionalLight('#fff3dd', 2.6); this.sun.position.set(40, 70, 35); this.sun.castShadow = true;
+    this.sun = new THREE.DirectionalLight('#ffeccc', 2.3); this.sun.position.set(40, 70, 35); this.sun.castShadow = true;
     const sc = this.sun.shadow.camera as THREE.OrthographicCamera; sc.left = -45; sc.right = 45; sc.top = 45; sc.bottom = -45; sc.near = 10; sc.far = 200;
     this.sun.shadow.bias = -0.0004; this.sun.shadow.normalBias = 0.03; this.scene.add(this.sun); this.scene.add(this.sun.target);
     // Gradient sky dome with stars at night.
@@ -57,9 +57,9 @@ export class Stage {
           vec3 g = floor(vP*260.0); float st = step(0.997, h(g)) * stars * smoothstep(0.05,0.3,vP.y); c += vec3(st);
           gl_FragColor = vec4(c,1.0); }` });
     this.sky = new THREE.Mesh(new THREE.SphereGeometry(800, 32, 16), skyMat); this.sky.renderOrder = -1; this.scene.add(this.sky);
-    this.scene.fog = new THREE.Fog('#cfe9ff', 160, 520);
+    this.scene.fog = new THREE.Fog('#bfd8ee', 260, 700);
     // Soft studio reflections so gold, glass and marble look polished.
-    const pm = new THREE.PMREMGenerator(this.renderer); this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; (this.scene as any).environmentIntensity = 0.55;
+    const pm = new THREE.PMREMGenerator(this.renderer); this.scene.environment = pm.fromScene(new RoomEnvironment(), 0.04).texture; (this.scene as any).environmentIntensity = 0.3;
     window.addEventListener('resize', () => this.resize());
     this.resize();
   }
@@ -73,20 +73,25 @@ export class Stage {
     const glow = (this.settings?.glow ?? true) && Q.bloom;
     if (glow && !this.composer) {
       this.composer = new EffectComposer(this.renderer); this.composer.addPass(new RenderPass(this.scene, this.camera));
-      this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.35, 0.5, 0.88); this.composer.addPass(this.bloom); this.composer.addPass(new OutputPass());
+      this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.0, 0.45, 0.96); this.composer.addPass(this.bloom); this.composer.addPass(new OutputPass());
     }
     if (!glow && this.composer) { this.composer.dispose(); this.composer = null; this.bloom = null; }
     this.resize();
   }
+  /** Moves the picture up by this fraction of the screen (so 3D people stay visible above bottom panels on phones). */
+  shiftY = 0;
+  setShift(f: number) { this.shiftY = f; this.resize(); }
   resize() {
     const w = this.canvas.clientWidth || window.innerWidth, h = this.canvas.clientHeight || window.innerHeight;
-    this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w < h ? 55 : 42; this.camera.updateProjectionMatrix();
+    this.renderer.setSize(w, h, false); this.camera.aspect = w / h; this.camera.fov = w < h ? 55 : 42;
+    if (this.shiftY) this.camera.setViewOffset(w, h, 0, this.shiftY * h, w, h); else this.camera.clearViewOffset();
+    this.camera.updateProjectionMatrix();
     this.composer?.setSize(w, h); this.composer?.setPixelRatio(this.renderer.getPixelRatio());
   }
   /** 0 = bright day, 0.5 = sunset, 1 = night. */
   setDayTime(t: number) {
     this.dayT = t;
-    const day = { top: new THREE.Color('#3f8fe0'), bottom: new THREE.Color('#d6ecff') };
+    const day = { top: new THREE.Color('#2f78cc'), bottom: new THREE.Color('#a8cbea') };
     const dusk = { top: new THREE.Color('#5a4a9a'), bottom: new THREE.Color('#ffb27a') };
     const night = { top: new THREE.Color('#0a1030'), bottom: new THREE.Color('#2a2f5a') };
     const lerp3 = (a: THREE.Color, b: THREE.Color, c: THREE.Color) => t < 0.5 ? a.clone().lerp(b, t * 2) : b.clone().lerp(c, (t - 0.5) * 2);
@@ -94,12 +99,13 @@ export class Stage {
     this.skyU.stars.value = Math.max(0, (t - 0.6) / 0.4);
     const ang = 0.9 - t * 0.85; const dir = new THREE.Vector3(Math.cos(ang) * 0.6, Math.sin(ang) * 0.9 + 0.05, 0.45).normalize();
     this.skyU.sunDir.value.copy(dir); this.sun.position.copy(dir.clone().multiplyScalar(90)).add(this.sun.target.position);
-    this.sun.intensity = t < 0.5 ? 2.6 - t * 2.4 : Math.max(0.25, 1.4 - (t - 0.5) * 2.4);
+    this.sun.intensity = t < 0.5 ? 2.3 - t * 2.0 : Math.max(0.2, 1.3 - (t - 0.5) * 2.2);
     this.sun.color.set(t < 0.4 ? '#fff3dd' : t < 0.7 ? '#ffb070' : '#8aa0ff');
-    this.hemi.intensity = 0.9 - t * 0.55; this.hemi.color.set(t < 0.6 ? '#cfe8ff' : '#6a78c0');
+    this.hemi.intensity = 0.55 - t * 0.3; this.hemi.color.set(t < 0.6 ? '#bcd6f0' : '#5a68b0');
     (this.scene.fog as THREE.Fog).color.copy(this.skyU.bottom.value);
-    this.renderer.toneMappingExposure = 1.05 - t * 0.2;
-    if (this.bloom) this.bloom.strength = 0.25 + t * 0.45;
+    this.renderer.toneMappingExposure = 0.92 - t * 0.12;
+    // Glow only after sunset (lights, chandeliers, fireworks). In daylight it bleached the whole picture.
+    if (this.bloom) { this.bloom.strength = Math.max(0, (t - 0.45) * 0.9); this.bloom.enabled = this.bloom.strength > 0.01; }
   }
   focusShadow(target: THREE.Vector3, radius: number) {
     this.sun.target.position.copy(target); const sc = this.sun.shadow.camera as THREE.OrthographicCamera;
