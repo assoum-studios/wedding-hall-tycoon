@@ -251,3 +251,23 @@ body:has(.backdrop) .guide .face { width: 54px; height: 54px; }
 .story-face { width: 46px; height: 46px; border-width: 2px; }
 
 .coin-fly { position: fixed; font-size: 26px; z-index: 96; pointer-events: none; transition: transform .9s cubic-bezier(.5,-0.3,.6,1), opacity .9s; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }
+
+/* ---- Juicy buttons: squash on press, springy release ---- */
+.btn, .dock-btn, .choice, .opt, .tab { transition: transform .12s cubic-bezier(.3,1.8,.5,1), filter .12s; -webkit-tap-highlight-color: transparent; }
+.btn:active, .dock-btn:active, .choice:active, .opt:active, .tab:active { transform: translateY(3px) scale(.93); filter: brightness(1.08); transition-duration: .05s; }
+.pbtns { flex-wrap: wrap; }
+/* ---- Cinematic letterbox bars ---- */
+body::before, body::after { content: ''; position: fixed; left: 0; right: 0; height: 0; background: #000; z-index: 1; pointer-events: none; transition: height .6s ease; }
+#game { z-index: 0; } #ui { z-index: 2; }
+body::before { top: 0; } body::after { bottom: 0; }
+body.cinema::before, body.cinema::after { height: 9vh; }
+/* ---- How to play intro ---- */
+.howto { text-align: center; }
+.howto .hp-icon { font-size: 72px; line-height: 1.1; margin: 8px 0; animation: hpbounce 1.4s ease-in-out infinite; display: inline-block; }
+.howto .hp-title { font-size: 24px; font-weight: 900; color: var(--blue-dark); margin: 4px 0; }
+.howto .hp-text { font-size: 16px; margin: 6px 0 12px; min-height: 66px; }
+.howto .hp-dots { display: flex; gap: 6px; justify-content: center; margin: 6px 0 12px; }
+.howto .hp-dots i { width: 10px; height: 10px; border-radius: 5px; background: #d7c39c; transition: width .25s; } .howto .hp-dots i.on { width: 26px; background: var(--gold); }
+.howto .hp-slide { animation: hpin .35s ease; }
+@keyframes hpbounce { 0%,100% { transform: translateY(0) rotate(-4deg); } 50% { transform: translateY(-10px) rotate(4deg); } }
+@keyframes hpin { from { opacity: 0; transform: translateX(30px); } to { opacity: 1; transform: none; } }

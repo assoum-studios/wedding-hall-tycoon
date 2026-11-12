@@ -23,6 +23,7 @@ import { openGoals } from './goalsUI';
 import { openPhone, showIncomingCall } from './phoneUI';
 import { showNews } from './news';
 import { Tutorial } from './tutorial';
+import { showHowTo } from './howto';
 import { openBuild } from './buildUI';
 
 export class App {
@@ -51,7 +52,8 @@ export class App {
     if (fresh) startGame(this.g);
     this.applySettings(); this.bindGame();
     this.world.loadHall(); this.world.setupDay(); this.world.viewHall(true);
-    this.tutorial = new Tutorial(this); if (!this.g.s.tutorial.done) this.tutorial.start();
+    this.tutorial = new Tutorial(this);
+    if (!this.g.s.tutorial.done) { if (fresh && !this.quick) showHowTo(() => this.tutorial?.start()); else this.tutorial.start(); }
     const login = checkLogin(this.g); if (login) setTimeout(() => toast(t('gift.streak', { n: login.streak, m: money(login.reward) }), 'good'), 1200);
     this.refresh(); this.persist(); playMusic('day');
     if (this.g.s.pendingNews && this.g.s.tutorial.done) setTimeout(() => showNews(this), 600);
@@ -59,8 +61,16 @@ export class App {
   /** Used by automated tests: start a fresh game without going through the menus. */
   quickStart(diff: 'relaxed' | 'normal' | 'hard' | 'legend' = 'normal', skipTutorial = true) {
     document.querySelectorAll('.screen, .custom, .story').forEach((e) => e.remove());
-    const s = newGameState(0, diff, defaultOwner('m'), ''); s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = this.g.s.settings.quality;
-    this.startNew(0, s, true); if (skipTutorial) this.tutorial?.finish();
+    this.quick = true; const s = newGameState(0, diff, defaultOwner('m'), ''); s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = this.g.s.settings.quality;
+    this.startNew(0, s, true); this.quick = false; if (skipTutorial) this.tutorial?.finish();
+  }
+  private quick = false;
+  /** Legacy: after the final chapter, start over in a fresh first hall with a permanent +10% income bonus per legacy. */
+  legacyRestart() {
+    const o = this.g.s; const s = newGameState(o.slot, o.difficulty, o.owner, o.ownerName);
+    s.legacy = (o.legacy ?? 0) + 1; s.wardrobe = o.wardrobe; s.settings = o.settings; s.halls[0].name = o.halls[0].name; s.removeAds = o.removeAds;
+    s.tutorial = { step: 99, done: true }; s.achievements = o.achievements; s.photos = o.photos.slice(-12);
+    closeAll(); this.quick = true; this.startNew(o.slot, s, true); this.quick = false; toast(t('legacy.started', { n: s.legacy, p: s.legacy * 10 }), 'good');
   }
   bindGame() {
     const g = this.g;
@@ -141,6 +151,8 @@ export class App {
     this.night = { sim, speed: 1, bubbles: new Map(), moment: null, ended: false };
     this.world.startNight(sim); this.world.autoCam = true; this.world.viewHall(); playMusic('day');
     this.hud.replaceChildren(); this.renderNightUI(); this.tutorial?.event('nightStart');
+    this.world.onOwnerAt = (pos) => { const n = this.night; const nd = this.world.night; if (!n || !nd) return;
+      for (const p of n.sim.problems) { const sp = nd.problemWorldPos(p.uid); if (p.state === 'active' && sp && sp.distanceTo(pos) < 3) { if (n.sim.ownerFix(p.uid)) { sfx('fix'); haptic(20); toast(t('night.fixedMyself', { p: L(PROBLEM_BY_ID[p.id]) }), 'good'); } break; } } };
   }
   renderNightUI() {
     this.nightUI?.remove(); const n = this.night!; const sim = n.sim;
@@ -176,9 +188,10 @@ export class App {
           const def = PROBLEM_BY_ID[p.id];
           const pay = btn(p.cost ? '💰 ' + money(p.cost) : '✅ ' + t('night.fixFree'), () => { if (sim.fix(p.uid)) { sfx('fix'); haptic(20); toast(t('night.fixed', { p: L(def) }), 'good'); this.tutorial?.event('fixed'); } else { sfx('fail'); toast(t('night.cantAfford'), 'bad'); } }, 'small green');
           const send = btn('👤 ' + t('night.sendStaff'), () => { if (sim.delegate(p.uid)) { sfx('tap'); haptic(12); toast(t('night.staffOnWay'), 'info'); this.tutorial?.event('fixed'); } else { sfx('fail'); toast(t('night.noStaffRole'), 'bad'); } }, 'small');
+          const go = btn('🚶 ' + t('night.goMyself', { m: money(Math.round(p.cost * 0.5)) }), () => { const spot = this.world.night?.problemWorldPos(p.uid); if (!spot) return; sfx('tap'); this.world.walkOwner(spot.clone(), () => { if (sim.ownerFix(p.uid)) { sfx('fix'); haptic(20); toast(t('night.fixedMyself', { p: L(def) }), 'good'); this.tutorial?.event('fixed'); } else if (p.state === 'active') { sfx('fail'); toast(t('night.cantAfford'), 'bad'); } }); }, 'small gold');
           const ign = btn('✕', () => { if (sim.ignore(p.uid)) { sfx('tap'); toast(t('night.ignored', { p: L(def) }), 'info'); } }, 'small ghost', { 'aria-label': t('night.ignore') });
           if (!sim.canDelegate(p.uid)) (send as HTMLButtonElement).disabled = true;
-          el = h('div', { class: 'problem' }, h('div', { class: 'pt' }, L(def)), h('div', { class: 'ring' }, h('i')), h('div', { class: 'pbtns' }, pay, send, ign));
+          el = h('div', { class: 'problem' }, h('div', { class: 'pt' }, L(def)), h('div', { class: 'ring' }, h('i')), h('div', { class: 'pbtns' }, pay, p.cost > 0 ? go : null, send, ign));
           this.overlay.append(el); n.bubbles.set(p.uid, el); sfx('alert');
         }
         const wp = this.world.night?.problemWorldPos(p.uid); if (wp) { const sp = this.world.screenPos(wp.clone().setY(2.6)); const half = Math.min(110, el.offsetWidth / 2 + 6); el.style.left = Math.max(half, Math.min(innerWidth - half, sp.x)) + 'px'; el.style.top = Math.max(110, sp.y) + 'px'; el.style.display = sp.visible ? '' : 'none'; }

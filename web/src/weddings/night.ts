@@ -124,7 +124,7 @@ export class NightSim {
     }
     // Tables ask for service during dinner and dancing; fewer waiters means more tables waiting.
     if (this.phase === 'dinner' || this.phase === 'dancing') {
-      const short = shortages(g, this.hallIdx, this.b.req.guests); const rate = 0.05 * Math.min(4, this.tables) / 4 * (1 + (short.waiter ?? 0) * 0.6 + (short.bartender ?? 0) * 0.4) * (this.phase === 'dancing' ? 0.7 : 1);
+      const short = shortages(g, this.hallIdx, this.b.req.guests); const rate = 0.05 * Math.min(4, this.tables) / 4 * (1 + (short.waiter ?? 0) * 0.6 + (short.bartender ?? 0) * 0.4) * (this.phase === 'dancing' ? 0.7 : 1) * (this.b.plan.zones && staffIn(g, this.hallIdx, 'waiter').length >= 2 ? 0.6 : 1);
       if (g.rng.chance(rate * dt * 4) && this.needs.length < 4) this.needs.push({ uid: this.needUid++, table: g.rng.int(0, this.tables - 1), kind: this.phase === 'dancing' ? (g.rng.chance(0.5) ? 'drink' : 'music') : g.rng.chance(0.7) ? 'food' : 'drink', timeLeft: 14 });
     }
     for (const n of [...this.needs]) { n.timeLeft -= dt; if (n.timeLeft <= 0) { this.needs = this.needs.filter((x) => x !== n); this.needsMissed++; this.delta -= 0.6; this.events.push({ kind: 'needMissed', data: n }); } }
@@ -148,6 +148,11 @@ export class NightSim {
     const p = this.problems.find((x) => x.uid === uid); if (!p || p.state !== 'active') return false;
     if (this.g.s.money < p.cost) return false;
     this.resolve(p, true, false); return true;
+  }
+  /** The owner walked over in person: fixes it at half price. */
+  ownerFix(uid: number) {
+    const p = this.problems.find((x) => x.uid === uid); if (!p || p.state !== 'active') return false;
+    const c = Math.round(p.cost * 0.5); if (this.g.s.money < c) return false; this.resolve(p, true, false, c); return true;
   }
   /** Send a staff member of the right role instead of paying: free, but takes time and can fail. */
   delegate(uid: number) {

@@ -6,7 +6,7 @@ import { CFG, CONTENT, BIZ, HALLS } from '../core/data';
 import { invoiceLines, invoiceTotals, evaluateOffer, book, rejectRequest, dateTaken, referralOptions, refer, referChance, meetMiddle, type InvoiceLine } from '../weddings/clients';
 import { planMatches, managerPlan } from '../weddings/night';
 import { FOOD, type FoodTier } from '../weddings/quality';
-import { managerOf, effSkill } from '../staff/staff';
+import { managerOf, effSkill, staffIn } from '../staff/staff';
 import { acceptSmall, declineSmall } from '../business/plots';
 import { h, div, btn, ic, modal, tabs, toast, bar } from './dom';
 import { sfx } from '../audio/audio';
@@ -161,6 +161,8 @@ export function planning(app: App, b: Booking, onDone?: () => void) {
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.music')), chips(Object.keys(CFG.music), plan.music, (id) => L(CFG.music[id]), () => null, (id) => (plan.music = id)),
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.venue')), chips(venues, plan.venue, (id) => L(CFG.venues[id]), () => null, (id) => (plan.venue = id)),
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.food')), chips(['standard', 'premium', 'luxury'] as any[], plan.food!, (id) => t('food.' + id) + ' · +' + money(Math.round(r.guests * (CFG.menus[r.menu]?.cost ?? 20) * (FOOD[id as FoodTier].costMult - 1))), () => null, (id) => (plan.food = id)),
+      h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.zones')), h('div', { class: 'sub' }, t('plan.zonesHelp', { n: staffIn(g, b.hall, 'waiter').length })),
+      chips(['off', 'on'] as any[], plan.zones ? 'on' : 'off', (id) => t('plan.zones.' + id), () => null, (id) => (plan.zones = id === 'on')),
       h('div', { class: 'title', style: { marginTop: '12px' } }, t('seat.title')), h('div', { class: 'sub' }, feud ? '⚠ ' + t('seat.feud') : t('seat.help')),
       ...groups.map((gr) => h('div', { class: 'row wrap', style: { margin: '4px 0' } }, h('span', { style: { width: '120px', fontWeight: '800' } }, t('seat.' + gr)),
         ...zones.map((z) => h('button', { class: 'choice' + (seat[gr] === z ? ' on' : ''), onClick: () => { seat[gr] = z; render(); } }, t('zone.' + z))))),

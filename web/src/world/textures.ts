@@ -72,7 +72,7 @@ export const MAT = {
   grass: new M({ color: '#ffffff', roughness: 0.95 }),
   sand: new M({ color: '#ffffff', roughness: 0.95 }),
   stone: new M({ color: '#ffffff', roughness: 0.85 }),
-  marble: new M({ color: '#ffffff', roughness: 0.22, metalness: 0.0 }),
+  marble: new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0.18, metalness: 0.0, clearcoat: 0.9, clearcoatRoughness: 0.06, envMapIntensity: 1.6 }) as unknown as THREE.MeshStandardMaterial,
   wallpaper: new M({ color: '#ffffff', roughness: 0.85 }),
   lineWhite: new M({ color: '#f5f5f5', roughness: 0.8 }),
   lineYellow: new M({ color: '#f2c94c', roughness: 0.8 }),

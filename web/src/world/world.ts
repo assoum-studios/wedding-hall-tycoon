@@ -13,6 +13,8 @@ import { ITEM_BY_ID, CFG, CONTENT } from '../core/data';
 import { staffIn, managerOf, staffNeeds } from '../staff/staff';
 import { randomLook } from '../characters/looks';
 import { VICTOR } from '../characters/cast';
+import { ownerLook } from '../progress/wardrobe';
+import { Weather, weatherFor } from './weather';
 import { Rng, vrand } from '../core/rng';
 import type { NightSim, ActiveProblem } from '../weddings/night';
 import * as Props from './props';
@@ -27,6 +29,9 @@ export class World {
   onPick: (p: Pick, x: number, y: number) => void = () => {};
   night: NightDirector | null = null; build: BuildMode | null = null; extra = new THREE.Group(); autoCam = true;
   private rng = new Rng(Math.floor(Math.random() * 1e9));
+  weather: Weather | null = null; private dayClock = 0; private marker: THREE.Mesh | null = null;
+  /** Called when the owner reaches a spot the player tapped (night: fixes problems there). */
+  onOwnerAt: ((pos: THREE.Vector3) => void) | null = null;
   constructor(public g: Game, canvas: HTMLCanvasElement) {
     this.stage = new Stage(canvas); this.stage.setQuality(g.s.settings.quality, g.s.settings);
     this.rig = new CameraRig(this.stage.camera, canvas);
@@ -51,7 +56,7 @@ export class World {
   setupDay() {
     this.mode = 'day'; this.stage.setShift(0); this.clearPeople(); this.view.applyPlan(null); this.view.setMood(0, 0); this.stage.setDayTime(0.15); this.view.doorTarget = 0;
     const h = this.g.hall; const { d, w } = hallDims(h.size); const nav = this.nav;
-    this.owner = this.addPerson(this.g.s.owner, new THREE.Vector3(1.5, 0, d / 2 - 2), Math.PI, 'owner'); this.owner.anim = 'pose';
+    this.owner = this.addPerson(ownerLook(this.g), new THREE.Vector3(1.5, 0, d / 2 - 2), Math.PI, 'owner'); this.owner.anim = 'pose';
     const staff = staffIn(this.g, this.hallIdx).slice(0, Math.min(24, QUALITY[this.stage.quality].guests / 3));
     staff.forEach((e, i) => {
       const spot = this.randomFree(); const p = this.addPerson(e.look, spot, this.rng.range(0, 6), e.role); p.data.emp = e.id;
@@ -63,6 +68,7 @@ export class World {
       const v = this.addPerson(VICTOR, new THREE.Vector3(-6, 0, STREET_Z - 6), Math.PI, 'victor'); const { d: hd } = hallDims(this.g.hall.size);
       v.walkPath([new THREE.Vector3(-3, 0, hd / 2 + 7)], 'crossed', Math.PI, () => { v.setEmote('angry', 3); setTimeout(() => { if (this.people.includes(v)) v.walkPath([new THREE.Vector3(-40, 0, STREET_Z - 6.5)], 'idle', null, () => { if (this.people.includes(v)) v.obj.visible = false; }); }, 6000); });
     }
+    this.dayClock = 0; this.setWeather(this.g.s.settings.particles === false ? null : weatherFor(h.id, this.g.s.day, this.hallIdx));
     const peds = this.stage.quality === 'smooth' ? 6 : 12; for (let i = 0; i < peds; i++) { const p = this.addPerson(randomLook(this.rng), new THREE.Vector3(-60 + i * 11, 0, STREET_Z - 6.5), 0, 'visitor'); p.data.side = i % 2; this.wander(p); }
     void w;
   }
@@ -88,6 +94,28 @@ export class World {
   private pickArr<T>(a: T[]) { return a[Math.floor(vrand() * a.length)]; }
   private near(p: THREE.Vector3, r: number) { const a = vrand() * Math.PI * 2; return new THREE.Vector3(p.x + Math.cos(a) * r, 0, p.z + Math.sin(a) * r); }
 
+  setWeather(kind: 'rain' | 'snow' | 'sand' | null) {
+    if (this.weather?.kind === kind) return; this.weather?.dispose(); this.weather = null;
+    if (kind) { this.weather = new Weather(kind, this.stage.quality === 'smooth' ? 0.5 : 1); this.stage.scene.add(this.weather.obj); }
+  }
+  /** The owner walks (or runs, if far) to a spot; a ring marks where. */
+  walkOwner(pt: THREE.Vector3, then?: () => void) {
+    const o = this.owner; if (!o) return;
+    if (!this.marker) { this.marker = new THREE.Mesh(new THREE.RingGeometry(0.35, 0.5, 28), new THREE.MeshBasicMaterial({ color: '#ffd24a', transparent: true, depthWrite: false })); this.marker.rotation.x = -Math.PI / 2; this.stage.scene.add(this.marker); }
+    this.marker.position.set(pt.x, 0.05, pt.z); this.marker.visible = true; (this.marker.material as THREE.MeshBasicMaterial).opacity = 1;
+    const far = o.pos.distanceTo(pt) > 7; o.setProp(null);
+    o.walkTo(this.nav, pt, 'pose', null, () => { if (this.marker) this.marker.visible = false; o.setEmote('happy', 1.5); then?.(); this.onOwnerAt?.(pt.clone()); this.ownerArrived(pt); }, far);
+  }
+  private ownerArrived(pt: THREE.Vector3) {
+    if (this.mode !== 'day') return;
+    // A quick pep talk: staff close to the owner get a small morale boost (once per day each).
+    let n = 0;
+    for (const p of this.people) if (p.data.emp && !p.data.pepped && p.pos.distanceTo(pt) < 3.5) { const e = this.g.s.staff.find((x) => x.id === p.data.emp); if (e) { e.morale = Math.min(100, e.morale + 3); p.data.pepped = true; p.setEmote('heart', 2); n++; } }
+    if (n) this.g.toast(n === 1 ? '💬 +3 ❤' : `💬 ×${n} +3 ❤`, 'good');
+  }
+  /** Black cinema bars for a few seconds during big moments. */
+  cinema(secs = 5) { document.body.classList.add('cinema'); clearTimeout((this as any)._cin); (this as any)._cin = setTimeout(() => document.body.classList.remove('cinema'), secs * 1000); }
+
   // ---------------- Camera presets ----------------
   viewHall(snap = false) { const { d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 0, d * 0.1), Math.max(26, d * 1.35), 0.95, 0); if (snap) this.rig.snap(); }
   viewNeighborhood() { this.rig.flyTo(new THREE.Vector3(0, 0, 0), 190, 1.05, 0.3); }
@@ -104,6 +132,11 @@ export class World {
     for (const p of this.people) { const c = p.pos.clone().setY(1); const d = this.ray.ray.distanceToPoint(c); if (d < 0.6 && d < bestD) { bestD = d; best = p; } }
     if (best && this.rig.dist < 70) { this.rig.flyTo(best.pos.clone(), Math.min(this.rig.dist, 14)); this.onPick({ kind: 'person', person: best }, x, y); return; }
     const hits = this.ray.intersectObjects(this.view.pickables, false).filter((h) => h.object.visible !== false || true);
+    // Inside the hall, tapping the floor sends the owner walking there.
+    if (this.owner && (this.mode === 'night' || (this.mode === 'day' && this.rig.interior)) && (this.mode === 'night' || !hits.some((h) => (h.object as any).pick?.kind === 'item'))) {
+      const pt = new THREE.Vector3();
+      if (this.ray.ray.intersectPlane(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0), pt)) { const c = this.nav.cellOf(pt); if (c.x >= 0 && c.z >= 0 && c.x < this.nav.w && c.z < this.nav.d && this.nav.free(c.x, c.z)) { this.walkOwner(pt); return; } }
+    }
     const interiorFirst = this.rig.interior ? hits.find((h) => (h.object as any).pick?.kind === 'item') : null;
     const hit = interiorFirst ?? hits.find((h) => (h.object as any).pick?.kind !== 'item' || this.rig.interior);
     if (!hit) return;
@@ -123,6 +156,14 @@ export class World {
     const cam = this.stage.camera.position; const lodBase = this.stage.quality === 'smooth' ? 2 : 1;
     for (const p of this.people) { const d = p.pos.distanceTo(cam); p.update(dt, t, d > 45 ? 3 * lodBase : d > 25 ? 2 * lodBase : lodBase); }
     if (this.mode === 'night' || this.mode === 'day') separate(this.people, this.nav, dt);
+    // Day view: a slow day -> evening -> day loop (5 minutes) with lights coming on at dusk.
+    if (this.mode === 'day') {
+      this.dayClock += dt; const k = (this.dayClock % 300) / 300; const wet = this.weather && this.weather.kind !== 'sand' ? 0.1 : 0;
+      const dT = 0.08 + wet + 0.5 * (0.5 - 0.5 * Math.cos(k * Math.PI * 2));
+      if (Math.abs(dT - this.stage.dayT) > 0.003) { this.stage.setDayTime(dT); this.view.setMood(Math.max(0, (dT - 0.38) / 0.62), 0); }
+    }
+    if (this.weather) { this.weather.obj.visible = this.mode === 'day'; if (this.weather.obj.visible) this.weather.update(dt, t, this.rig.target); }
+    if (this.marker?.visible) { const m = this.marker.material as THREE.MeshBasicMaterial; m.opacity = 0.6 + Math.sin(t * 6) * 0.4; }
   }
 
   // ---------------- Owner customization stage (matches the reference image) ----------------
@@ -186,7 +227,7 @@ export class World {
     const bg = Props.mesh(new THREE.BoxGeometry(6, 3.5, 0.2), MAT.creamLight, 0, 1.75, -2.2); desk.add(bg);
     desk.add(Props.mesh(new THREE.TorusGeometry(0.32, 0.06, 8, 20), MAT.gold, -0.22, 2.5, -2.05)); desk.add(Props.mesh(new THREE.TorusGeometry(0.32, 0.06, 8, 20), MAT.gold, 0.22, 2.5, -2.05));
     this.extra.add(desk);
-    const o = this.addPerson(this.g.s.owner, base.clone().add(new THREE.Vector3(0, 0, -1.0)), 0, 'owner'); o.anim = 'sitTalk';
+    const o = this.addPerson(ownerLook(this.g), base.clone().add(new THREE.Vector3(0, 0, -1.0)), 0, 'owner'); o.anim = 'sitTalk';
     const gp = this.addPerson(groom, base.clone().add(new THREE.Vector3(-0.55, 0, 1.15)), Math.PI, 'guest'); gp.anim = 'sitTalk';
     const bp = this.addPerson(bride, base.clone().add(new THREE.Vector3(0.55, 0, 1.15)), Math.PI, 'guest'); bp.anim = 'sit';
     this.rig.flyTo(base.clone().add(new THREE.Vector3(0.0, 0.8, 0.2)), 5.0, 0.28, 0.45, true); this.rig.snap(); this.rig.locked = true;
@@ -222,7 +263,7 @@ export class NightDirector {
     this.groom.obj.visible = false; this.bride.obj.visible = false;
     this.limo = Props.car('#f7f7f7', true); this.limo.rotation.y = Math.PI / 2; this.limo.position.set(-90, 0, STREET_Z - 3.6); w.stage.scene.add(this.limo);
     // Owner greets at the door.
-    w.owner = w.addPerson(g.s.owner, new THREE.Vector3(3, 0, d / 2 - 1.5), Math.PI, 'owner'); w.owner.anim = 'pose';
+    w.owner = w.addPerson(ownerLook(g), new THREE.Vector3(3, 0, d / 2 - 1.5), Math.PI, 'owner'); w.owner.anim = 'pose';
     // Staff
     const cap = QUALITY[w.stage.quality].guests;
     for (const e of staffIn(g, h === g.s.halls[b.hall] ? b.hall : g.s.activeHall).slice(0, Math.max(6, Math.round(cap / 4)))) {
@@ -294,8 +335,16 @@ export class NightDirector {
     }
     // The wedding photo, taken during the dancing.
     if (ph === 'dancing' && !this.photoTaken && sim.phaseProgress() > 0.35) { this.photoTaken = true; const pos = this.groom.pos.clone(); w.rig.flyTo(pos, 9, 0.35); setTimeout(() => { sim.photo = w.capturePhoto(); }, 900); }
+    // Cinematic close-ups when the first dance, the cake or the bouquet toss begins.
+    for (const m of sim.moments) if (m.state === 'open' && !this.shot.has(m.id) && (m.id === 'first_dance' || m.id === 'cake' || m.id === 'bouquet')) {
+      this.shot.add(m.id); if (!(w.autoCam && w.g.s.settings.autoCamera)) continue;
+      const mid = this.groom.pos.clone().add(this.bride.pos).multiplyScalar(0.5).setY(1.1);
+      w.cinema(5); w.rig.flyTo(mid, m.id === 'bouquet' ? 9 : 5.5, m.id === 'cake' ? 0.3 : 0.2, (m.id === 'first_dance' ? 0.6 : -0.4));
+      setTimeout(() => { if (w.night === this && w.autoCam) w.viewHall(); }, 5500);
+    }
     if (w.autoCam && w.g.s.settings.autoCamera) this.autoCamera(t);
   }
+  private shot = new Set<string>();
   mood() { return Math.max(0, Math.min(100, 70 + this.sim.delta * 2)); }
   private problemSpot(p: ActiveProblem) {
     const nav = this.w.nav; const list = nav.spots.table ?? []; const base = list.length ? list[p.spot % list.length] : this.w.randomFree();
@@ -317,7 +366,8 @@ export class NightDirector {
         for (const p of this.guests) if (!p.moving) { p.anim = 'clap'; p.expr = 'excited'; }
         const aisleEnd = dance.clone();
         for (const [p, off] of [[this.groom, -0.35], [this.bride, 0.35]] as const) { p.walkPath([new THREE.Vector3(off, 0, STREET_Z - 12), new THREE.Vector3(off, 0, d / 2 + 2), new THREE.Vector3(off, 0, d / 2 - 1)], 'walk', null, () => p.walkTo(nav, aisleEnd.clone().add(new THREE.Vector3(off, 0, 0)), 'wave', Math.PI)); p.speed = 0.9; }
-        if (w.g.s.settings.autoCamera) w.rig.flyTo(new THREE.Vector3(0, 0, d / 2 - 3), 12, 0.35, 0);
+        // Cinematic: a low shot at the door as the couple walks in, then it follows them up the aisle.
+        if (w.g.s.settings.autoCamera && w.autoCam) { w.cinema(7); w.rig.flyTo(new THREE.Vector3(0, 1.2, d / 2 - 2), 8, 0.16, 0); setTimeout(() => { if (w.night === this && w.autoCam) w.rig.flyTo(new THREE.Vector3(0, 1, (d / 2 - 2 + aisleEnd.z) / 2), 11, 0.3, 0); }, 3500); }
         break;
       }
       case 'dinner': {

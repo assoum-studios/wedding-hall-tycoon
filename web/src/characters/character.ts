@@ -149,6 +149,9 @@ export function buildCharacter(look: Look, detail = 1): CharacterMesh {
   const lip = female ? '#c24d5c' : new THREE.Color(skin).multiplyScalar(0.62);
   bld.add(new THREE.TorusGeometry(hr * 0.2, hr * 0.045, 6, 14, Math.PI), lip, B.mouth, 0, M(0, hy - hr * 0.3, hr * 0.92, 1, 0.75, 0.6, 0, 0, Math.PI));
   bld.add(sphere(hr * 0.16, 10, 6, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), '#ffffff', B.mouth, 0, M(0, hy - hr * 0.3, hr * 0.9, 1, 0.45, 0.4)); // teeth hint
+  // Soft rosy cheeks.
+  const blush = new THREE.Color(skin).lerp(new THREE.Color('#ff6f86'), female ? 0.32 : 0.18);
+  for (const sx of [1, -1]) bld.add(sphere(hr * 0.17, 10, 8), blush, B.head, 0, M(sx * hr * 0.55, hy - hr * 0.16, hr * 0.78, 1, 0.65, 0.35));
   // Beard and moustache like the General Manager.
   if (look.beard && !female) {
     const bc = new THREE.Color(hairC).multiplyScalar(0.9);

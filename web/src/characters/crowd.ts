@@ -50,8 +50,17 @@ export class Person {
   }
   setProp(p: Parameters<typeof attachProp>[1]) { attachProp(this.c, p); }
   get moving() { return this.path.length > 0; }
+  /** Anti-jam: seconds left walking "through" others, and progress tracking to detect being stuck. */
+  ghost = 0; private checkT = 0; private checkX = 0; private checkZ = 0; private stuckN = 0;
   update(dt: number, t: number, lod = 1) {
+    if (this.ghost > 0) this.ghost -= dt;
     if (this.path.length) {
+      this.checkT += dt;
+      if (this.checkT > 0.6) {
+        const moved = Math.hypot(this.pos.x - this.checkX, this.pos.z - this.checkZ);
+        if (moved < this.speed * 0.6 * 0.35) { this.stuckN++; this.ghost = 1.6; if (this.stuckN >= 4 && this.path.length > 1) this.path.shift(); } else this.stuckN = 0;
+        this.checkT = 0; this.checkX = this.pos.x; this.checkZ = this.pos.z;
+      }
       const target = this.path[0]; const dx = target.x - this.pos.x, dz = target.z - this.pos.z; const dist = Math.hypot(dx, dz);
       const step = this.speed * dt;
       if (dist <= step) { this.pos.x = target.x; this.pos.z = target.z; this.path.shift(); }
@@ -73,12 +82,15 @@ export class Person {
 export function separate(people: Person[], nav: NavGrid | null, dt: number) {
   const n = people.length;
   for (let i = 0; i < n; i++) {
-    const a = people[i]; if (a.anim === 'sit' || a.anim === 'eat' || a.anim === 'sitTalk' || a.anim === 'drink' || a.anim === 'slowdance') continue;
+    const a = people[i]; if (a.ghost > 0 || a.anim === 'sit' || a.anim === 'eat' || a.anim === 'sitTalk' || a.anim === 'drink' || a.anim === 'slowdance' || a.anim === 'faint') continue;
     for (let j = i + 1; j < n; j++) {
-      const b = people[j]; if (b.anim === 'sit' || b.anim === 'eat' || b.anim === 'sitTalk' || b.anim === 'drink' || b.anim === 'slowdance') continue;
-      const dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; const d2 = dx * dx + dz * dz;
-      if (d2 > 0.0001 && d2 < 0.36) {
-        const d = Math.sqrt(d2); const push = (0.6 - d) * 0.5 * Math.min(1, dt * 8); const ux = dx / d, uz = dz / d;
+      const b = people[j]; if (b.ghost > 0 || b.anim === 'sit' || b.anim === 'eat' || b.anim === 'sitTalk' || b.anim === 'drink' || b.anim === 'slowdance') continue;
+      let dx = b.pos.x - a.pos.x, dz = b.pos.z - a.pos.z; let d2 = dx * dx + dz * dz;
+      if (d2 <= 0.0001) { const ang = (i * 2.4 + j) % 6.28; dx = Math.cos(ang) * 0.01; dz = Math.sin(ang) * 0.01; d2 = 0.0001; } // exactly on top of each other
+      if (d2 < 0.36) {
+        const d = Math.sqrt(d2); const push = (0.6 - d) * 0.5 * Math.min(1, dt * 8); let ux = dx / d, uz = dz / d;
+        // Two walkers meeting head-on both step to their right instead of pushing straight into each other.
+        if (a.moving && b.moving) { const px = -uz, pz = ux; ux = ux * 0.4 + px * 0.9; uz = uz * 0.4 + pz * 0.9; const l = Math.hypot(ux, uz); ux /= l; uz /= l; }
         const tryMove = (p: Person, s: number) => { const nx = p.pos.x + ux * push * s, nz = p.pos.z + uz * push * s; if (!nav) { p.pos.x = nx; p.pos.z = nz; return; } const c = nav.cellOf(new THREE.Vector3(nx, 0, nz)); if (nav.free(c.x, c.z)) { p.pos.x = nx; p.pos.z = nz; } };
         tryMove(a, -1); tryMove(b, 1);
       }

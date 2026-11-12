@@ -1,5 +1,6 @@
 // Builds a hall (palace exterior + detailed interior with cut-away walls) and its neighborhood.
 import * as THREE from 'three';
+import { currentCar } from '../progress/wardrobe';
 import type { Game } from '../core/game';
 import type { HallState, PlacedItem, Plan } from '../core/types';
 import { HALLS, CFG, ITEM_BY_ID, PLOT_BY_ID } from '../core/data';
@@ -208,7 +209,14 @@ export class HallView {
     }
     // Owner's office: a real building you can tap and enter.
     const off = new THREE.Group(); off.position.copy(OFFICE_POS);
-    off.add(P.building(9, 5, 7, '#f7efe0', false, '#1f3c88'));
+    // The office grows with the story: a second floor at chapter 4, a third with gold trim and a flag at chapter 8.
+    const ch = this.g.s.chapter + (this.g.s.chapterDone ? 1 : 0); const floors = ch >= 8 ? 3 : ch >= 4 ? 2 : 1;
+    off.add(P.building(9, 5 * floors, 7, ch >= 8 ? '#fbf3e2' : '#f7efe0', false, ch >= 8 ? '#b8902f' : '#1f3c88'));
+    if (floors > 1) for (let f = 1; f < floors; f++) off.add(P.mesh(new THREE.BoxGeometry(9.3, 0.25, 7.3), ch >= 8 ? MAT.gold : MAT.stone, 0, 5 * f, 0));
+    if (ch >= 8) { off.add(P.mesh(new THREE.CylinderGeometry(0.06, 0.06, 4, 6), MAT.chrome, 3.5, 5 * floors + 2.4, 0)); const flag = P.mesh(new THREE.PlaneGeometry(1.6, 1), new THREE.MeshStandardMaterial({ color: '#d81b7a', side: THREE.DoubleSide }), 4.3, 5 * floors + 3.8, 0); off.add(flag); }
+    if (ch >= 6) for (const x of [-4.2, 4.2]) { const lamp = P.mesh(new THREE.SphereGeometry(0.25, 10, 8), MAT.bulb, x, 2.6, 3.7); off.add(lamp); }
+    // The owner's car (Wardrobe) parked next to the office.
+    { const cd = currentCar(this.g); const car = P.car(cd.color, !!cd.limo); car.position.set(7.5, 0, 2); car.rotation.y = 0.1; off.add(car); }
     off.add(P.mesh(new THREE.BoxGeometry(2, 3, 0.2), MAT.wood, 0, 1.5, 3.55));
     const sg = P.sign(t('dock.office'), 4, 1); sg.position.set(0, 4, 3.62); off.add(sg);
     for (const x of [-3, 3]) { const t = P.tree('cypress'); t.position.set(x, 0, 4.5); off.add(t); }

@@ -23,6 +23,7 @@ export class Game {
   /** Money in or out. Positive income counts toward "money earned" stats when earned=true. */
   addMoney(n: number, earned = false) {
     if (!isFinite(n)) return;
+    if (earned && n > 0 && this.s.legacy) n *= 1 + 0.1 * this.s.legacy;
     this.s.money = Math.round(this.s.money + n);
     if (earned && n > 0) { this.stat('moneyEarned', n); this.weekStat('earn', n); }
     this.emit('money', n);

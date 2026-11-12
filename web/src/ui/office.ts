@@ -3,7 +3,7 @@ import type { App } from './app';
 import type { Employee, Candidate } from '../core/types';
 import { t, L, money, num, setLang, getLang } from '../core/i18n';
 import { STAFF, ROLE_BY_ID, BIZ, HALLS, PLOT_BY_ID, CFG } from '../core/data';
-import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor, staffNeeds, resting, giveDayOff } from '../staff/staff';
+import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor, staffNeeds, resting, giveDayOff, relationsOf } from '../staff/staff';
 import { SUPPLIER_COST, SUPPLIER_HAPPY, SUPPLIER_KINDS } from '../weddings/quality';
 import { launch, active as campaignActive, marketingBoost } from '../business/marketing';
 import { buy, equip, item as shopItem } from '../business/shop';
@@ -14,14 +14,16 @@ import { capacity, hallDims } from '../world/layout';
 import { runCheat, CHEATS_ENABLED } from '../core/cheats';
 import { h, div, btn, ic, modal, tabs, toast, bar, toggle, confirmBox, stars } from './dom';
 import { sfx } from '../audio/audio';
+import { showHowTo } from './howto';
+import { OUTFITS_W, CARS, unlockedAt, wardrobe, ownerLook } from '../progress/wardrobe';
 
 export function openOffice(app: App, tab = 'staff', focus?: string) {
   const g = app.g; let cur = tab;
   const m = modal(t('office.title'), [], { cls: 'wide' });
   const render = () => {
-    const names = [{ id: 'staff', label: t('office.staff') }, { id: 'managers', label: t('office.managers') }, { id: 'marketing', label: t('office.marketing') }, { id: 'shop', label: t('office.shop') }, { id: 'suppliers', label: t('office.suppliers') }, { id: 'money', label: t('office.money') }, { id: 'halls', label: t('office.halls') }, { id: 'settings', label: t('office.settings') }];
+    const names = [{ id: 'staff', label: t('office.staff') }, { id: 'managers', label: t('office.managers') }, { id: 'marketing', label: t('office.marketing') }, { id: 'shop', label: t('office.shop') }, { id: 'suppliers', label: t('office.suppliers') }, { id: 'money', label: t('office.money') }, { id: 'halls', label: t('office.halls') }, { id: 'wardrobe', label: t('office.wardrobe') }, { id: 'settings', label: t('office.settings') }];
     m.panel.querySelector('.tabs')?.remove(); m.panel.insertBefore(tabs(names, cur, (id) => { cur = id; focus = undefined; render(); }), m.body);
-    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), suppliers: () => suppliersView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), settings: () => settingsView(app, m.close) };
+    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), suppliers: () => suppliersView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), wardrobe: () => wardrobeView(app, render), settings: () => settingsView(app, m.close) };
     m.setBody(views[cur]());
   };
   const offs = ['staff', 'money', 'loans', 'plots', 'research', 'upgrade', 'candidates'].map((e) => g.on(e, () => { if (document.body.contains(m.el)) render(); }));
@@ -64,6 +66,7 @@ function empCard(app: App, e: Employee, rerender: () => void, hl = false) {
   const g = app.g; const role = ROLE_BY_ID[e.role]; const fair = wageFor(e.role, e.skill);
   return h('div', { class: 'card' + (hl ? ' hl' : '') },
     h('div', { class: 'row' }, h('div', { class: 'avatar' }, L(e.name).slice(0, 1)), h('div', { class: 'grow' }, h('div', { class: 'title' }, L(e.name)), h('div', { class: 'sub' }, L(role) + ' · ' + L(STAFF.traits[e.trait]))), h('span', { class: 'stars' }, skillStars(e.skill))),
+    (() => { const rel = relationsOf(g, e); return rel.friends.length || rel.rivals.length ? h('div', { class: 'sub' }, [...rel.friends.map((o) => '🤝 ' + L(o.name)), ...rel.rivals.map((o) => '⚡ ' + L(o.name))].join('  ·  ')) : null; })(),
     h('div', { class: 'row', style: { margin: '8px 0' } }, moraleBar(e), h('div', { style: { minWidth: '80px' } }, h('div', { class: 'sub' }, t('staff.fatigue', { n: Math.round(e.fatigue ?? 0) })), bar((e.fatigue ?? 0) / 100, (e.fatigue ?? 0) > 60 ? 'red' : 'gold')), h('div', { class: 'grow sub' }, t('staff.wage', { m: money(e.wage) }) + (e.wage < fair * 0.95 ? ' ⚠' : ''), h('br'), t('staff.week', { n: e.weekWeddings }) + (g.s.halls.filter((x) => x.owned).length > 1 ? ' · ' + hallName(app, e.hall) : ''))),
     h('div', { class: 'row wrap' },
       e.skill < 5 ? btn(t('staff.train', { m: money(trainCost(e)) }), () => { if (train(g, e)) { sfx('success'); toast(t('staff.trained', { n: L(e.name) }), 'good'); } else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small') : null,
@@ -199,7 +202,25 @@ function settingsView(app: App, closeOffice: () => void) {
     row(t('settings.bubbles'), toggle(st.bubbles, (v) => { st.bubbles = v; apply(); })), row(t('settings.floating'), toggle(st.floatingMoney, (v) => { st.floatingMoney = v; apply(); })),
     row(t('settings.language'), seg(['en', 'ar'] as const, getLang(), (o) => (o === 'en' ? 'English' : 'العربية'), (o) => { setLang(o); closeOffice(); })),
     CHEATS_ENABLED ? row(t('settings.cheat'), h('div', { class: 'row', style: { width: '260px' } }, cheatIn, btn(t('settings.apply'), () => { const ok = runCheat(g, cheatIn.value); toast(ok ? t('settings.cheatOk') : t('settings.cheatBad'), ok ? 'good' : 'bad'); if (ok) { app.world.loadHall(); app.world.setupDay(); app.refresh(); } }, 'small'))) : null,
-    h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('settings.backToTitle'), () => { closeOffice(); app.backToTitle(); }, 'red'))),
+    h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('howto.title'), () => showHowTo(), 'ghost'), btn(t('settings.backToTitle'), () => { closeOffice(); app.backToTitle(); }, 'red'))),
     h('div', { class: 'sub', style: { textAlign: 'center' } }, t('settings.version', { v: '1.0.0' }))];
 }
 export { num, staffIn, PLOT_BY_ID, loanDef, shopItem, stars, ic, _u };
+
+/** Wardrobe: outfits and cars unlocked by finishing story chapters. */
+function wardrobeView(app: App, rerender: () => void): (Node | null)[] {
+  const g = app.g; const w = wardrobe(g);
+  const card = (on: boolean, open: boolean, title: string, sub: string, img: Node | null, pick: () => void) => h('div', { class: 'card' + (on ? ' hl' : '') },
+    img, h('div', { class: 'title' }, title), h('div', { class: 'sub' }, sub),
+    open ? (on ? h('span', { class: 'pill green' }, t('wardrobe.wearing')) : btn(t('wardrobe.use'), () => { pick(); sfx('success'); rerender(); }, 'small green')) : h('span', { class: 'pill' }, '🔒'));
+  return [
+    h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('wardrobe.help')),
+    h('div', { class: 'title' }, t('wardrobe.outfits')),
+    div('grid3', ...OUTFITS_W.map((o) => { const open = unlockedAt(g, o.ch); const look = o.c ? (g.s.owner.gender === 'm' ? { ...g.s.owner, outfit: 0, c: o.c, c2: o.c2 } : { ...g.s.owner, outfit: 6, c: o.c, c2: o.c2 }) : g.s.owner;
+      return card(w.outfit === o.id, open, L(o.name), open ? '' : t('wardrobe.unlockCh', { n: o.ch }), open ? h('img', { src: app.world.renderThumb(look, { size: 110 }), style: { width: '90px', display: 'block', margin: '0 auto' } }) : null, () => { w.outfit = o.id; if (app.world.mode === 'day') app.world.setupDay(); }); })),
+    h('div', { class: 'title', style: { marginTop: '12px' } }, t('wardrobe.cars')),
+    div('grid3', ...CARS.map((c) => { const open = unlockedAt(g, c.ch);
+      return card(w.car === c.id, open, L(c.name), open ? '' : t('wardrobe.unlockCh', { n: c.ch }), h('div', { style: { height: '22px', borderRadius: '8px', background: c.color, margin: '4px 0' } }), () => { w.car = c.id; app.world.view.buildPlots(g.hall); }); })),
+  ];
+}
+void ownerLook;

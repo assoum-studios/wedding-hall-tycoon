@@ -5,7 +5,7 @@ import { t, L, money, num } from '../core/i18n';
 import { PROG } from '../core/data';
 import { chapterDef, goalProgress, goalText, chapterReady, completeChapter, weeklyProgress, weeklyReady, claimWeekly, weeklyText, ACHIEVEMENTS, achReady, achValue, claimAch } from '../progress/goals';
 import { canSpin, spin, currentSeason, leaderboards } from '../progress/events';
-import { h, div, btn, modal, tabs, toast, bar, confetti } from './dom';
+import { h, div, btn, modal, tabs, toast, bar, confetti, confirmBox } from './dom';
 import { sfx } from '../audio/audio';
 import { VICTOR, NADIA } from '../characters/cast';
 
@@ -24,7 +24,9 @@ export function openGoals(app: App, tab = 'chapter') {
 
 function chapterView(app: App, rerender: () => void) {
   const g = app.g; const c = chapterDef(g.s.chapter); const out: Node[] = [];
-  if (g.s.chapterDone) out.push(h('div', { class: 'card hl' }, h('div', { class: 'title' }, t('goals.allDone')), h('div', { class: 'quote' }, t('goals.victorFlowers'))));
+  if (g.s.chapterDone) out.push(h('div', { class: 'card hl' }, h('div', { class: 'title' }, t('goals.allDone')), h('div', { class: 'quote' }, t('goals.victorFlowers')),
+    h('div', { class: 'sub', style: { marginTop: '8px' } }, t('legacy.help', { n: (g.s.legacy ?? 0) + 1, p: ((g.s.legacy ?? 0) + 1) * 10 })),
+    btn('👑 ' + t('legacy.button'), () => confirmBox(t('legacy.confirm', { p: ((g.s.legacy ?? 0) + 1) * 10 }), t('legacy.button'), () => app.legacyRestart()), 'gold big', { style: { marginTop: '8px', width: '100%' } })));
   else if (c) {
     const ready = chapterReady(g);
     out.push(h('div', { class: 'card' + (ready ? ' hl' : '') },

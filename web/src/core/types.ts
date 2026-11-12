@@ -39,7 +39,7 @@ export interface ClientRequest {
   met?: boolean; countered?: boolean; status: 'new' | 'met' | 'countered' | 'rejected';
   counterOffer?: number;
 }
-export interface Plan { theme: ThemeId; flower: string; light: string; music: string; venue: string; planned: boolean; byManager?: boolean; food?: 'standard' | 'premium' | 'luxury'; seating?: number; }
+export interface Plan { theme: ThemeId; flower: string; light: string; music: string; venue: string; planned: boolean; byManager?: boolean; food?: 'standard' | 'premium' | 'luxury'; seating?: number; zones?: boolean; }
 export interface Booking {
   id: string; req: ClientRequest; hall: number; date: number;
   lines: DemandLine[]; priceLevel: number; total: number; cost: number; deposit: number; paid: number;
@@ -110,4 +110,6 @@ export interface GameState {
   removeAds: boolean;
   suppliers?: Record<string, number>; // flowers / cake / photo: 0 budget, 1 standard, 2 premium
   investor?: { until: number; share: number; amount: number } | null;
+  wardrobe?: { outfit: string; car: string }; // unlockable owner outfit + car
+  legacy?: number; // legacy restarts done (each adds an income bonus)
 }

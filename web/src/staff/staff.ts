@@ -100,6 +100,15 @@ export function avgSkill(g: Game, hallIdx: number, role: string) { const a = sta
 /** Called after each wedding: everyone in that hall worked it. */
 export function workedWedding(g: Game, hallIdx: number) { for (const e of staffIn(g, hallIdx)) { if (resting(g, e)) continue; e.weekWeddings++; e.fatigue = Math.min(100, (e.fatigue ?? 0) + 18); if (STAFF.traits[e.trait]?.growth && g.rng.chance(0.08) && e.skill < 5) e.skill++; } }
 
+/** Friendships and rivalries: a stable pair relation from the two ids (about 1 in 9 pairs each). */
+export function relation(a: Employee, b: Employee): 'friend' | 'rival' | null {
+  if (a.id === b.id) return null; const k = [a.id, b.id].sort().join('|'); let x = 7; for (let i = 0; i < k.length; i++) x = (x * 31 + k.charCodeAt(i)) >>> 0;
+  const r = x % 9; return r === 0 ? 'friend' : r === 1 ? 'rival' : null;
+}
+export function relationsOf(g: Game, e: Employee) {
+  const same = g.s.staff.filter((o) => o.hall === e.hall && o.id !== e.id);
+  return { friends: same.filter((o) => relation(e, o) === 'friend'), rivals: same.filter((o) => relation(e, o) === 'rival') };
+}
 /** Daily morale: underpaid or overworked staff lose morale, ask for raises and finally quit. */
 export function dailyMorale(g: Game) {
   const M = STAFF.morale; const decay = g.research('moraleDecayMult');
@@ -112,6 +121,7 @@ export function dailyMorale(g: Game) {
     if (e.weekWeddings > M.maxWeddingsPerWeek) d -= M.overworkPenalty * decay * 0.3;
     if (g.s.money < 0) d -= 1.5 * decay;
     d += (STAFF.traits[e.trait]?.morale ?? 0) * 2;
+    { const rel = relationsOf(g, e); d += Math.min(2, rel.friends.length * 0.6) - Math.min(2.5, rel.rivals.length * 0.8); }
     e.morale = Math.max(0, Math.min(100, e.morale + d));
     if (e.morale < M.askRaiseBelow && !e.askedRaise) {
       e.askedRaise = true;
