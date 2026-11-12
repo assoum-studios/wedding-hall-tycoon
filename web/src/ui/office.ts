@@ -3,7 +3,8 @@ import type { App } from './app';
 import type { Employee, Candidate } from '../core/types';
 import { t, L, money, num, setLang, getLang } from '../core/i18n';
 import { STAFF, ROLE_BY_ID, BIZ, HALLS, PLOT_BY_ID, CFG } from '../core/data';
-import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor, staffNeeds } from '../staff/staff';
+import { interview, hire, fire, train, trainCost, raise, assign, skillRange, setManager, staffIn, wageFor, staffNeeds, resting, giveDayOff } from '../staff/staff';
+import { SUPPLIER_COST, SUPPLIER_HAPPY, SUPPLIER_KINDS } from '../weddings/quality';
 import { launch, active as campaignActive, marketingBoost } from '../business/marketing';
 import { buy, equip, item as shopItem } from '../business/shop';
 import { take, canTake, payOff, payoffAmount, owed, loanDef, loanRate, payRosaDebt } from '../business/loans';
@@ -18,9 +19,9 @@ export function openOffice(app: App, tab = 'staff', focus?: string) {
   const g = app.g; let cur = tab;
   const m = modal(t('office.title'), [], { cls: 'wide' });
   const render = () => {
-    const names = [{ id: 'staff', label: t('office.staff') }, { id: 'managers', label: t('office.managers') }, { id: 'marketing', label: t('office.marketing') }, { id: 'shop', label: t('office.shop') }, { id: 'money', label: t('office.money') }, { id: 'halls', label: t('office.halls') }, { id: 'settings', label: t('office.settings') }];
+    const names = [{ id: 'staff', label: t('office.staff') }, { id: 'managers', label: t('office.managers') }, { id: 'marketing', label: t('office.marketing') }, { id: 'shop', label: t('office.shop') }, { id: 'suppliers', label: t('office.suppliers') }, { id: 'money', label: t('office.money') }, { id: 'halls', label: t('office.halls') }, { id: 'settings', label: t('office.settings') }];
     m.panel.querySelector('.tabs')?.remove(); m.panel.insertBefore(tabs(names, cur, (id) => { cur = id; focus = undefined; render(); }), m.body);
-    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), settings: () => settingsView(app, m.close) };
+    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), suppliers: () => suppliersView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), settings: () => settingsView(app, m.close) };
     m.setBody(views[cur]());
   };
   const offs = ['staff', 'money', 'loans', 'plots', 'research', 'upgrade', 'candidates'].map((e) => g.on(e, () => { if (document.body.contains(m.el)) render(); }));
@@ -63,10 +64,11 @@ function empCard(app: App, e: Employee, rerender: () => void, hl = false) {
   const g = app.g; const role = ROLE_BY_ID[e.role]; const fair = wageFor(e.role, e.skill);
   return h('div', { class: 'card' + (hl ? ' hl' : '') },
     h('div', { class: 'row' }, h('div', { class: 'avatar' }, L(e.name).slice(0, 1)), h('div', { class: 'grow' }, h('div', { class: 'title' }, L(e.name)), h('div', { class: 'sub' }, L(role) + ' · ' + L(STAFF.traits[e.trait]))), h('span', { class: 'stars' }, skillStars(e.skill))),
-    h('div', { class: 'row', style: { margin: '8px 0' } }, moraleBar(e), h('div', { class: 'grow sub' }, t('staff.wage', { m: money(e.wage) }) + (e.wage < fair * 0.95 ? ' ⚠' : ''), h('br'), t('staff.week', { n: e.weekWeddings }) + (g.s.halls.filter((x) => x.owned).length > 1 ? ' · ' + hallName(app, e.hall) : ''))),
+    h('div', { class: 'row', style: { margin: '8px 0' } }, moraleBar(e), h('div', { style: { minWidth: '80px' } }, h('div', { class: 'sub' }, t('staff.fatigue', { n: Math.round(e.fatigue ?? 0) })), bar((e.fatigue ?? 0) / 100, (e.fatigue ?? 0) > 60 ? 'red' : 'gold')), h('div', { class: 'grow sub' }, t('staff.wage', { m: money(e.wage) }) + (e.wage < fair * 0.95 ? ' ⚠' : ''), h('br'), t('staff.week', { n: e.weekWeddings }) + (g.s.halls.filter((x) => x.owned).length > 1 ? ' · ' + hallName(app, e.hall) : ''))),
     h('div', { class: 'row wrap' },
       e.skill < 5 ? btn(t('staff.train', { m: money(trainCost(e)) }), () => { if (train(g, e)) { sfx('success'); toast(t('staff.trained', { n: L(e.name) }), 'good'); } else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small') : null,
       btn(t('staff.raise'), () => { raise(g, e); toast(t('staff.raised', { n: L(e.name), m: money(e.wage) }), 'good'); rerender(); }, 'small gold'),
+      resting(g, e) ? h('span', { class: 'pill blue' }, t('staff.resting')) : btn(t('staff.dayOff'), () => { giveDayOff(g, e); toast(t('staff.dayOffGiven', { n: L(e.name) }), 'good'); rerender(); }, 'small ghost'),
       g.s.halls.filter((x) => x.owned).length > 1 ? btn(t('staff.assign'), () => { const owned = g.s.halls.map((x, i) => ({ x, i })).filter((o) => o.x.owned); const nxt = owned[(owned.findIndex((o) => o.i === e.hall) + 1) % owned.length].i; assign(g, e, nxt); rerender(); }, 'small ghost') : null,
       !e.named ? btn(t('staff.fire'), () => confirmBox(t('staff.fireConfirm', { n: L(e.name) }), t('staff.fire'), () => { fire(g, e.id); toast(t('staff.fired', { n: L(e.name) }), 'info'); rerender(); }), 'small red', { 'data-fire': e.id }) : null));
 }
@@ -103,6 +105,14 @@ function managersView(app: App, rerender: () => void) {
     cands.length ? div('grid2', ...cands.map((c) => candCard(app, c, rerender))) : h('div', { class: 'empty' }, t('staff.noCandidates'))];
 }
 
+/** Suppliers: choose budget, standard or premium partners for flowers, cakes and photography. */
+function suppliersView(app: App, rerender: () => void) {
+  const g = app.g; const sup = (g.s.suppliers ??= { flowers: 1, cake: 1, photo: 1 });
+  return [h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('sup.help')), ...SUPPLIER_KINDS.map((k) => h('div', { class: 'card' }, h('div', { class: 'title' }, t('sup.' + k)),
+    div('grid3', ...[0, 1, 2].map((tier) => h('button', { class: 'card choice' + ((sup[k] ?? 1) === tier ? ' on' : ''), style: { flexDirection: 'column', alignItems: 'flex-start' }, onClick: () => { sup[k] = tier; app.persist(); rerender(); } },
+      h('b', {}, t('sup.tier' + tier) + ' · ' + t('sup.name.' + k + tier)), h('span', { class: 'sub' }, t('sup.effect', { c: Math.round((SUPPLIER_COST[tier] - 1) * 100), h: SUPPLIER_HAPPY[tier] })))))))];
+}
+
 function marketingView(app: App, rerender: () => void) {
   const g = app.g;
   return [h('div', { class: 'card' }, h('div', { class: 'title' }, t('mkt.boost', { p: Math.round(marketingBoost(g) * 100) })), bar(marketingBoost(g) / BIZ.marketingCap, 'gold'), h('div', { class: 'sub' }, t('mkt.cap', { p: Math.round(BIZ.marketingCap * 100) }))),
@@ -129,6 +139,10 @@ function moneyView(app: App, rerender: () => void) {
   return [
     h('div', { class: 'card' }, h('div', { class: 'list-line' }, h('span', {}, t('money.balance')), h('b', { class: s.money < 0 ? 'neg' : 'money' }, money(s.money))), h('div', { class: 'list-line' }, h('span', {}, t('money.upkeep')), h('b', {}, '-' + money(upkeep))), h('div', { class: 'list-line' }, h('span', {}, t('money.payroll')), h('b', {}, '-' + money(s.staff.reduce((a, e) => a + e.wage, 0) * 7))), h('div', { class: 'list-line' }, h('span', {}, t('money.business')), h('b', { class: 'money' }, '+' + money(biz)))),
     s.rosaDebt > 0 ? h('div', { class: 'card hl' }, h('div', { class: 'title' }, t('money.rosaDebt', { m: money(s.rosaDebt) })), h('div', { class: 'sub' }, t('money.rosaHelp', { m: money(CFG.start.rosaDebtMinWeekly) })), h('div', { class: 'row wrap', style: { marginTop: '8px' } }, ...[1000, 5000, 10000].map((a) => btn(t('money.pay', { m: money(a) }), () => { if (payRosaDebt(g, a)) sfx('coin'); else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small')), btn(t('money.payAll'), () => { if (payRosaDebt(g, s.rosaDebt)) sfx('success'); else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small green'))) : h('div', { class: 'card' }, '✓ ' + t('money.rosaPaid')),
+    (() => { const inv = s.investor; const offer = 20000 * g.s.chapter + 10000; const active = inv && inv.until >= s.day;
+      return h('div', { class: 'card' + (active ? ' hl' : '') }, h('div', { class: 'title' }, t('inv2.title')),
+        active ? h('div', { class: 'sub' }, t('inv2.active', { p: Math.round(inv!.share * 100), d: inv!.until - s.day + 1 })) : [h('div', { class: 'sub' }, t('inv2.offer', { m: money(offer), p: 12, w: 6 })),
+          btn(t('inv2.accept'), () => { s.investor = { until: s.day + 42, share: 0.12, amount: offer }; g.addMoney(offer); sfx('coin'); app.persist(); rerender(); }, 'small green', { style: { marginTop: '6px' } })]); })(),
     h('div', { class: 'title', style: { margin: '10px 0 6px' } }, t('money.loans')), h('div', { class: 'sub', style: { marginBottom: '6px' } }, t('money.loanRule')),
     div('grid2', ...BIZ.loans.map((ld: any) => { const l = s.loans.find((x) => x.cat === ld.id); const rate = loanRate(g, ld.id);
       return h('div', { class: 'card' + (l ? ' hl' : '') }, h('div', { class: 'title' }, L(ld) + ' · ' + money(ld.amount)), h('div', { class: 'sub' }, t('money.loanTerms', { w: ld.weeks, r: Math.round(rate * 100) })),

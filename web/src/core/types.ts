@@ -39,7 +39,7 @@ export interface ClientRequest {
   met?: boolean; countered?: boolean; status: 'new' | 'met' | 'countered' | 'rejected';
   counterOffer?: number;
 }
-export interface Plan { theme: ThemeId; flower: string; light: string; music: string; venue: string; planned: boolean; byManager?: boolean; }
+export interface Plan { theme: ThemeId; flower: string; light: string; music: string; venue: string; planned: boolean; byManager?: boolean; food?: 'standard' | 'premium' | 'luxury'; seating?: number; }
 export interface Booking {
   id: string; req: ClientRequest; hall: number; date: number;
   lines: DemandLine[]; priceLevel: number; total: number; cost: number; deposit: number; paid: number;
@@ -53,7 +53,7 @@ export interface WeddingRecord {
 }
 export interface Employee {
   id: string; name: Bi; role: string; skill: number; trait: string; wage: number; morale: number;
-  weekWeddings: number; hall: number; look: Look; hiredDay: number; askedRaise?: boolean;
+  weekWeddings: number; hall: number; look: Look; hiredDay: number; askedRaise?: boolean; fatigue?: number; restUntil?: number;
   toggles?: { run: boolean; fix: boolean; plan: boolean; accept: boolean };
   named?: string; // story character id
 }
@@ -108,4 +108,6 @@ export interface GameState {
   returningPool: { id: string; names: [Bi, Bi]; hall: number; day: number; looks: { g: Look; b: Look } }[];
   settings: Settings; idCounter: number; lastReport: WeddingRecord | null;
   removeAds: boolean;
+  suppliers?: Record<string, number>; // flowers / cake / photo: 0 budget, 1 standard, 2 premium
+  investor?: { until: number; share: number; amount: number } | null;
 }

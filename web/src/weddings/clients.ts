@@ -7,6 +7,7 @@ import { capacity, hallDims } from '../world/layout';
 import { staffIn } from '../staff/staff';
 import { marketingBoost } from '../business/marketing';
 import { currentSeason } from '../progress/events';
+import { SUPPLIER_COST } from './quality';
 
 const PERSONALITIES = Object.keys(CFG.personalities) as Personality[];
 const THEMES = Object.keys(CFG.themes) as ThemeId[];
@@ -84,12 +85,12 @@ export interface InvoiceLine { key: string; label: Bi | string; cost: number; pr
 /** All invoice lines for a request: fixed lines plus each extra demand. */
 export function invoiceLines(g: Game, req: ClientRequest, lines?: DemandLine[]): InvoiceLine[] {
   const P = CFG.pricing; const h = g.s.halls[req.hall]; const G = req.guests; const costMult = g.diff.costMult;
-  const food = g.mod('foodCostMult') * g.research('foodCostMult'); const flowers = g.mod('flowerCostMult') * g.research('decorCostMult') * g.plotEffect('decorCostMult', req.hall);
+  const food = g.mod('foodCostMult') * g.research('foodCostMult'); const flowers = g.mod('flowerCostMult') * g.research('decorCostMult') * g.plotEffect('decorCostMult', req.hall); const sup = g.s.suppliers ?? {}; const supF = SUPPLIER_COST[sup.flowers ?? 1], supC = SUPPLIER_COST[sup.cake ?? 1], supP = SUPPLIER_COST[sup.photo ?? 1];
   const music = CFG.music[req.music]; const menu = CFG.menus[req.menu];
   const out: InvoiceLine[] = [
     { key: 'rental', label: ['Hall rental', 'إيجار القاعة'], cost: 0, price: P.hallRentalBase + P.hallRentalPerSize * h.size, fixed: true, on: true, available: true },
     { key: 'menu', label: [`${menu.en} x ${G}`, `${menu.ar} × ${G}`], cost: Math.round(menu.cost * G * food * costMult), price: menu.price * G, fixed: true, on: true, available: true },
-    { key: 'decor', label: ['Theme decor & flowers', 'ديكور الثيم والزهور'], cost: Math.round((P.decorBase + P.decorPerGuest * G) * P.decorCostShare * flowers * costMult), price: P.decorBase + P.decorPerGuest * G, fixed: true, on: true, available: true },
+    { key: 'decor', label: ['Theme decor & flowers', 'ديكور الثيم والزهور'], cost: Math.round((P.decorBase + P.decorPerGuest * G) * P.decorCostShare * flowers * supF * costMult), price: P.decorBase + P.decorPerGuest * G, fixed: true, on: true, available: true },
     { key: 'music', label: [music.en, music.ar], cost: Math.round(music.cost * costMult), price: music.price, fixed: true, on: true, available: true },
   ];
   const cakeDisc = g.hasPlot(req.hall, 'cake_shop') ? 0.8 : 1;
@@ -98,7 +99,8 @@ export function invoiceLines(g: Game, req: ClientRequest, lines?: DemandLine[]):
     const mult = d.perGuest ? G : 1; const isCake = id.includes('cake');
     const on = lines ? (lines.find((l) => l.id === id)?.on ?? true) : true;
     const available = demandAvailable(g, req.hall, id);
-    out.push({ key: id, label: [d.en, d.ar], cost: Math.round(d.cost * mult * costMult * (isCake ? cakeDisc : 1)), price: d.price * mult, fixed: false, on: on && available, available });
+    const isPhoto = /photo|video|drone|painter/.test(id);
+    out.push({ key: id, label: [d.en, d.ar], cost: Math.round(d.cost * mult * costMult * (isCake ? cakeDisc * supC : 1) * (isPhoto ? supP : 1)), price: d.price * mult, fixed: false, on: on && available, available });
   }
   return out;
 }

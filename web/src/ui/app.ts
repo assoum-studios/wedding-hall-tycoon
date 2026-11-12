@@ -14,7 +14,7 @@ import { addPhoto } from '../phone/phone';
 import { unreadCount } from '../phone/phone';
 import { World } from '../world/world';
 import { autoQuality } from '../world/scene';
-import { h, div, btn, ic, modal, toast, floatMoney, confetti, bar, stars, uiRoot, closeAll, modalOpen } from './dom';
+import { h, div, btn, ic, modal, toast, floatMoney, confetti, bar, stars, uiRoot, closeAll, modalOpen, coinBurst } from './dom';
 import { sfx, haptic, playMusic, setVolumes, initAudio } from '../audio/audio';
 import { showTitle } from './title';
 import { openBookings } from './bookings';
@@ -174,13 +174,16 @@ export class App {
       if (p.state === 'active') {
         if (!el) {
           const def = PROBLEM_BY_ID[p.id];
-          el = h('div', { class: 'problem', onClick: () => { if (sim.fix(p.uid)) { sfx('fix'); haptic(20); toast(t('night.fixed', { p: L(def) }), 'good'); this.tutorial?.event('fixed'); } else { sfx('fail'); toast(t('night.cantAfford'), 'bad'); } } },
-            h('div', { class: 'pt' }, L(def)), h('div', { class: 'sub' }, p.cost ? t('night.fixCost', { m: money(p.cost) }) : t('night.fixFree')), h('div', { class: 'ring' }, h('i')));
+          const pay = btn(p.cost ? '💰 ' + money(p.cost) : '✅ ' + t('night.fixFree'), () => { if (sim.fix(p.uid)) { sfx('fix'); haptic(20); toast(t('night.fixed', { p: L(def) }), 'good'); this.tutorial?.event('fixed'); } else { sfx('fail'); toast(t('night.cantAfford'), 'bad'); } }, 'small green');
+          const send = btn('👤 ' + t('night.sendStaff'), () => { if (sim.delegate(p.uid)) { sfx('tap'); haptic(12); toast(t('night.staffOnWay'), 'info'); this.tutorial?.event('fixed'); } else { sfx('fail'); toast(t('night.noStaffRole'), 'bad'); } }, 'small');
+          const ign = btn('✕', () => { if (sim.ignore(p.uid)) { sfx('tap'); toast(t('night.ignored', { p: L(def) }), 'info'); } }, 'small ghost', { 'aria-label': t('night.ignore') });
+          if (!sim.canDelegate(p.uid)) (send as HTMLButtonElement).disabled = true;
+          el = h('div', { class: 'problem' }, h('div', { class: 'pt' }, L(def)), h('div', { class: 'ring' }, h('i')), h('div', { class: 'pbtns' }, pay, send, ign));
           this.overlay.append(el); n.bubbles.set(p.uid, el); sfx('alert');
         }
         const wp = this.world.night?.problemWorldPos(p.uid); if (wp) { const sp = this.world.screenPos(wp.clone().setY(2.6)); const half = Math.min(110, el.offsetWidth / 2 + 6); el.style.left = Math.max(half, Math.min(innerWidth - half, sp.x)) + 'px'; el.style.top = Math.max(110, sp.y) + 'px'; el.style.display = sp.visible ? '' : 'none'; }
         (el.querySelector('.ring i') as HTMLElement).style.width = (p.timeLeft / p.total) * 100 + '%';
-        el.classList.toggle('mgr', !!p.manager && p.manager.eta > 0);
+        el.classList.toggle('mgr', (!!p.manager && p.manager.eta > 0) || (!!p.staff && p.staff.eta > 0));
       } else if (el) { el.remove(); n.bubbles.delete(p.uid); }
     }
     this.updateTableFaces();
@@ -192,14 +195,16 @@ export class App {
     const night = this.world.night; if (!night) return;
     if (!this.tableFaces.length) {
       const spots = (this.world.nav.spots.table ?? []).slice(0, 40);
-      this.tableFaces = spots.map((p, i) => { const el = h('div', { class: 'table-face' }, '🙂'); this.overlay.append(el); return { el, pos: p.clone().setY(1.9), bias: ((i * 37) % 11) - 5 }; });
+      this.tableFaces = spots.map((p, i) => { const el = h('div', { class: 'table-face' }, '🙂'); el.addEventListener('pointerdown', (e) => { e.stopPropagation(); const uid = (el as any).needUid; if (uid && night.sim.serve(uid)) { sfx('coin'); haptic(12); el.classList.remove('need'); (el as any).needUid = 0; el.textContent = '😀'; } }); this.overlay.append(el); return { el, pos: p.clone().setY(1.9), bias: ((i * 37) % 11) - 5 }; });
     }
     const phase = night.sim.phase; const show = phase === 'dinner' || phase === 'dancing';
     this.faceT += 1;
+    const sim = night.sim; const needByTable = new Map<number, any>(); for (const nd of sim.needs) needByTable.set(nd.table % Math.max(1, this.tableFaces.length), nd);
+    this.tableFaces.forEach((f, i) => { const nd = needByTable.get(i); f.el.classList.toggle('need', !!nd); if (nd) { f.el.textContent = nd.kind === 'food' ? '🍽️' : nd.kind === 'drink' ? '🥤' : '🎵'; (f.el as any).needUid = nd.uid; } else if ((f.el as any).needUid) { (f.el as any).needUid = 0; f.el.textContent = '🙂'; } });
     for (const f of this.tableFaces) {
       if (!show) { f.el.style.display = 'none'; continue; }
       const sp = this.world.screenPos(f.pos); f.el.style.display = sp.visible ? '' : 'none'; f.el.style.left = sp.x + 'px'; f.el.style.top = sp.y + 'px';
-      if (this.faceT % 20 === 0) { const m = night.mood() + f.bias + (night.sim.problems.some((p) => p.state === 'active') ? -6 : 0); f.el.textContent = m > 85 ? '😍' : m > 70 ? '😀' : m > 55 ? '🙂' : m > 40 ? '😐' : m > 25 ? '😟' : '😠'; }
+      if (this.faceT % 20 === 0 && !f.el.classList.contains('need')) { const m = night.mood() + f.bias + (night.sim.problems.some((p) => p.state === 'active') ? -6 : 0); f.el.textContent = m > 85 ? '😍' : m > 70 ? '😀' : m > 55 ? '🙂' : m > 40 ? '😐' : m > 25 ? '😟' : '😠'; }
     }
   }
   private clearTableFaces() { for (const f of this.tableFaces) f.el.remove(); this.tableFaces = []; }
@@ -208,8 +213,15 @@ export class App {
     switch (ev.kind) {
       case 'phase': if (ev.data === 'dancing') { playMusic('party'); sfx('cheer'); } if (ev.data === 'farewell') { playMusic('day'); setTimeout(() => sfx('firework'), 2600); setTimeout(() => sfx('firework'), 3200); } if (ev.data === 'entrance') sfx('cheer'); break;
       case 'moment': {
-        n.moment?.remove(); const m = ev.data;
-        n.moment = h('div', { class: 'moment' }, h('button', { class: 'ringbtn', onClick: () => { if (sim.tapMoment(m.id)) { sfx('moment'); confetti(); this.world.night?.momentFx(); toast(t('moment.hit', { m: t('moment.' + m.id) }), 'good'); } n.moment?.remove(); n.moment = null; } }, t('moment.' + m.id), h('span', { style: { fontSize: '13px' } }, t('moment.tap'))));
+        // Timing mini-game: tap when the shrinking ring meets the golden circle.
+        n.moment?.remove(); const m = ev.data; const t0 = performance.now(); const win = m.window * 1000 / n.speed;
+        const ring = h('div', { class: 'timing-ring' });
+        n.moment = h('div', { class: 'moment' }, h('button', { class: 'ringbtn', onClick: () => {
+          const k = (performance.now() - t0) / win; const scale = 1.8 - 1.4 * Math.min(1, k); const q = Math.max(0, 1 - Math.abs(scale - 1) / 0.5);
+          const word = q > 0.8 ? t('moment.perfect') : q > 0.4 ? t('moment.good') : t('moment.ok');
+          if (sim.tapMoment(m.id, q)) { sfx('moment'); haptic(q > 0.8 ? 40 : 15); if (q > 0.4) { confetti(); this.world.night?.momentFx(); } toast(word + ' ' + t('moment.' + m.id), q > 0.4 ? 'good' : 'info'); }
+          n.moment?.remove(); n.moment = null; } }, ring, t('moment.' + m.id), h('span', { style: { fontSize: '13px' } }, t('moment.tapRing'))));
+        const anim = () => { if (!n.moment || !ring.isConnected) return; const k = Math.min(1, (performance.now() - t0) / win); ring.style.transform = `translate(-50%,-50%) scale(${1.8 - 1.4 * k})`; requestAnimationFrame(anim); }; anim();
         uiRoot().append(n.moment); sfx('alert'); break;
       }
       case 'momentMiss': n.moment?.remove(); n.moment = null; break;
@@ -227,6 +239,7 @@ export class App {
   }
   showReport(rec: WeddingRecord) {
     const g = this.g;
+    if (rec.profit > 0) setTimeout(() => coinBurst(16), 600);
     const close = () => { this.nightUI?.remove(); this.nightUI = null; this.night = null; this.world.endNight(); this.world.viewHall(); playMusic('day'); this.refresh(); this.persist(); this.tutorial?.event('report'); if (chapterReady(g)) setTimeout(() => openGoals(this, 'chapter'), 300); };
     const line = (k: string, v: string, cls = '') => h('div', { class: 'list-line' }, h('span', {}, k), h('b', { class: cls }, v));
     const label = (k: string) => t('plan.' + k);

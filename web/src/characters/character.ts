@@ -4,8 +4,8 @@ import * as THREE from 'three';
 import type { Look } from '../core/types';
 import { SKIN, HAIR_COLORS, ACCENTS } from '../core/game';
 
-export const B = { root: 0, hips: 1, spine: 2, chest: 3, neck: 4, head: 5, uaL: 6, faL: 7, hL: 8, uaR: 9, faR: 10, hR: 11, thL: 12, shL: 13, ftL: 14, thR: 15, shR: 16, ftR: 17, browL: 18, browR: 19, mouth: 20 } as const;
-const BONE_COUNT = 21;
+export const B = { root: 0, hips: 1, spine: 2, chest: 3, neck: 4, head: 5, uaL: 6, faL: 7, hL: 8, uaR: 9, faR: 10, hR: 11, thL: 12, shL: 13, ftL: 14, thR: 15, shR: 16, ftR: 17, browL: 18, browR: 19, mouth: 20, eyeL: 21, eyeR: 22 } as const;
+const BONE_COUNT = 23;
 
 /** Outfit tables. Owner outfits match the customization screen: navy, black tux, cream, red, green, purple. */
 export const OUTFITS = [
@@ -103,6 +103,8 @@ function makeSkeleton(d: Dims) {
   const hy = d.headY - (d.neckY + d.head * 0.55);
   set(B.browL, B.head, d.head * 0.38, hy + d.head * 0.36, d.head * 0.88); set(B.browR, B.head, -d.head * 0.38, hy + d.head * 0.36, d.head * 0.88);
   set(B.mouth, B.head, 0, hy - d.head * 0.3, d.head * 0.9);
+  // eye bones so eyes can blink and widen
+  set(B.eyeL, B.head, d.head * 0.36, hy + d.head * 0.08, d.head * 0.8); set(B.eyeR, B.head, -d.head * 0.36, hy + d.head * 0.08, d.head * 0.8);
   return b;
 }
 
@@ -133,10 +135,10 @@ export function buildCharacter(look: Look, detail = 1): CharacterMesh {
   const eyeY = hy + hr * 0.08, eyeX = hr * 0.36, eyeZ = hr * 0.8;
   const iris = ['#5a3a22', '#3d2614', '#2f5a7a', '#4d6b3a'][look.skin % 2 === 0 ? 0 : 1];
   for (const sx of [1, -1]) {
-    bld.add(sphere(hr * 0.26, S(14), S(12)), '#ffffff', B.head, 1, M(sx * eyeX, eyeY, eyeZ, 0.95, 1.15, 0.55));
-    bld.add(sphere(hr * 0.16, S(12), S(10)), iris, B.head, 1, M(sx * eyeX, eyeY - hr * 0.02, eyeZ + hr * 0.1, 1, 1.05, 0.5));
-    bld.add(sphere(hr * 0.085, 10, 8), '#0b0b0b', B.head, 1, M(sx * eyeX, eyeY - hr * 0.02, eyeZ + hr * 0.15, 1, 1, 0.45));
-    bld.add(sphere(hr * 0.04, 6, 5), '#ffffff', B.head, 1, M(sx * eyeX + hr * 0.05, eyeY + hr * 0.05, eyeZ + hr * 0.2));
+    bld.add(sphere(hr * 0.26, S(14), S(12)), '#ffffff', sx > 0 ? B.eyeL : B.eyeR, 1, M(sx * eyeX, eyeY, eyeZ, 0.95, 1.15, 0.55));
+    bld.add(sphere(hr * 0.16, S(12), S(10)), iris, sx > 0 ? B.eyeL : B.eyeR, 1, M(sx * eyeX, eyeY - hr * 0.02, eyeZ + hr * 0.1, 1, 1.05, 0.5));
+    bld.add(sphere(hr * 0.085, 10, 8), '#0b0b0b', sx > 0 ? B.eyeL : B.eyeR, 1, M(sx * eyeX, eyeY - hr * 0.02, eyeZ + hr * 0.15, 1, 1, 0.45));
+    bld.add(sphere(hr * 0.04, 6, 5), '#ffffff', sx > 0 ? B.eyeL : B.eyeR, 1, M(sx * eyeX + hr * 0.05, eyeY + hr * 0.05, eyeZ + hr * 0.2));
     // eyelid line
     bld.add(sphere(hr * 0.27, S(12), 6, 0, Math.PI * 2, 0, Math.PI * 0.32), skin, B.head, 0, M(sx * eyeX, eyeY + hr * 0.01, eyeZ - hr * 0.01, 1, 1.15, 0.6, -0.25));
     if (female) for (let k = 0; k < 3; k++) bld.add(capsule(hr * 0.012, hr * 0.08, 4), '#1a1110', sx > 0 ? B.browL : B.browR, 0, M(sx * (eyeX + hr * (0.08 + k * 0.07)), eyeY + hr * 0.25, eyeZ + hr * 0.05, 1, 1, 1, 0, 0, sx * (0.6 + k * 0.25)));
@@ -215,6 +217,8 @@ export function buildCharacter(look: Look, detail = 1): CharacterMesh {
     // hand + thumb
     bld.add(sphere(d.armR * 1.15, 10, 8), skin, h, 0, M(sx * d.shoulderX, d.wristY - d.armR * 0.9, 0.0, 0.8, 1.15, 1));
     bld.add(capsule(d.armR * 0.32, d.armR * 0.7, 5), skin, h, 0, M(sx * (d.shoulderX - d.armR * 0.55), d.wristY - d.armR * 0.6, d.armR * 0.5, 1, 1, 1, 0.4, 0, sx * 0.5));
+    // four fingers, slightly curled
+    for (let f = 0; f < 4; f++) bld.add(capsule(d.armR * 0.2, d.armR * 0.62, 5), skin, h, 0, M(sx * d.shoulderX + sx * (f - 1.5) * d.armR * 0.36 * 0.6, d.wristY - d.armR * 1.95, d.armR * (0.1 + f * 0.03), 1, 1, 1, 0.25, 0, 0));
     if (look.acc.includes('watch') && sx < 0) bld.add(cyl(d.armR * 0.95, d.armR * 0.95, d.H * 0.012, 10), '#d4af37', fa, 1, M(sx * d.shoulderX, d.wristY + d.H * 0.02, 0));
   }
   // ---- Legs ----

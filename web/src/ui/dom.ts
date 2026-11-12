@@ -95,3 +95,15 @@ export function closeTop(): boolean {
   const bd = document.querySelector('.backdrop'); if (bd) { bd.remove(); return true; }
   return false;
 }
+
+/** Coins fly up to the money counter when you get paid. */
+export function coinBurst(n = 14) {
+  const target = document.querySelector('.money-stat')?.getBoundingClientRect(); const tx = target ? target.left + 20 : 40, ty = target ? target.top + 20 : 30;
+  for (let i = 0; i < n; i++) {
+    const el = h('div', { class: 'coin-fly' }, '🪙'); const sx = innerWidth / 2 + (Math.random() - 0.5) * 160, sy = innerHeight / 2 + (Math.random() - 0.5) * 120;
+    el.style.left = sx + 'px'; el.style.top = sy + 'px'; uiRoot().append(el);
+    requestAnimationFrame(() => setTimeout(() => { el.style.transform = `translate(${tx - sx}px, ${ty - sy}px) scale(.5)`; el.style.opacity = '0.2'; }, i * 40));
+    setTimeout(() => el.remove(), 1200 + i * 40);
+  }
+  sfx('coin');
+}

@@ -7,6 +7,7 @@ import { chapterDef, goalProgress, goalText, chapterReady, completeChapter, week
 import { canSpin, spin, currentSeason, leaderboards } from '../progress/events';
 import { h, div, btn, modal, tabs, toast, bar, confetti } from './dom';
 import { sfx } from '../audio/audio';
+import { VICTOR, NADIA } from '../characters/cast';
 
 export function openGoals(app: App, tab = 'chapter') {
   const g = app.g; let cur = tab;
@@ -31,7 +32,7 @@ function chapterView(app: App, rerender: () => void) {
       ...c.goals.map((gl: any) => { const [cur, n] = goalProgress(g, gl); return h('div', { style: { margin: '8px 0' } }, h('div', { class: 'row' }, h('span', { class: 'grow', style: { fontWeight: '800' } }, (cur >= n ? '✅ ' : '⬜ ') + goalText(gl)), h('span', { class: 'sub' }, num(Math.min(cur, n)) + ' / ' + num(n))), bar(Math.min(1, cur / n))); }),
       h('div', { class: 'title', style: { marginTop: '8px' } }, t('goals.bonus')),
       ...c.bonus.map((gl: any) => { const [cur, n] = goalProgress(g, gl); return h('div', { class: 'sub' }, (cur >= n ? '⭐ ' : '☆ ') + goalText(gl)); }),
-      ready ? btn(t('goals.claimChapter'), () => { const r = completeChapter(g); if (r) { sfx('success'); confetti(); const mm = modal(t('goals.chapterDone', { n: r.def.id }), [h('div', { class: 'big-score' }, '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars)), h('div', { class: 'quote', style: { marginTop: '10px' } }, L(r.ending)), h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('ui.continue'), () => mm.close(), 'green'))], { cls: 'narrow' }); } rerender(); }, 'green big', { style: { marginTop: '10px', width: '100%' }, id: 'btn-claim-chapter' }) : null));
+      ready ? btn(t('goals.claimChapter'), () => { const r = completeChapter(g); if (r) { sfx('success'); confetti(); const who = [3, 5, 10, 12].includes(r.def.id) ? VICTOR : NADIA; const mm = modal(t('goals.chapterDone', { n: r.def.id }), [h('div', { class: 'row', style: { justifyContent: 'center' } }, h('div', { class: 'avatar', style: { width: '96px', height: '96px' } }, h('img', { src: app.world.renderThumb(who, { face: true, size: 160 }) }))), h('div', { class: 'big-score' }, '★'.repeat(r.stars) + '☆'.repeat(3 - r.stars)), h('div', { class: 'quote', style: { marginTop: '10px' } }, L(r.ending)), h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('ui.continue'), () => mm.close(), 'green'))], { cls: 'narrow' }); } rerender(); }, 'green big', { style: { marginTop: '10px', width: '100%' }, id: 'btn-claim-chapter' }) : null));
   }
   out.push(h('div', { class: 'title', style: { margin: '10px 0 6px' } }, t('goals.chapters')));
   out.push(div('grid3', ...PROG.chapters.map((ch: any) => h('div', { class: 'card' + (ch.id === g.s.chapter ? ' hl' : '') }, h('div', { class: 'sub' }, t('goals.chapterN', { n: ch.id })), h('div', { style: { fontWeight: '900' } }, ch.id <= g.s.chapter || g.s.chapterDone ? L(ch) : '???'), h('div', { class: 'stars' }, g.s.chapterStars[ch.id - 1] ? '★'.repeat(g.s.chapterStars[ch.id - 1]) + '☆'.repeat(3 - g.s.chapterStars[ch.id - 1]) : '')))));

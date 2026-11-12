@@ -11,6 +11,7 @@ import { logoSVG } from './logo';
 import { hallDims } from '../world/layout';
 import { STREET_Z } from '../world/hallScene';
 import { initAudio, playMusic, sfx } from '../audio/audio';
+import { ROSA, VICTOR, NADIA } from '../characters/cast';
 
 let screenEl: HTMLElement | null = null;
 function setScreen(el: HTMLElement | null) { screenEl?.remove(); screenEl = el; if (el) uiRoot().append(el); }
@@ -46,8 +47,7 @@ function pickDifficulty(app: App, slot: number) {
 /** Four illustrated story pages, staged with the 3D world. */
 function story(app: App, slot: number, diff: Difficulty, page: number) {
   const w = app.world; w.mode = 'story'; w.stage.setShift(0); w.clearPeople(); const { d } = hallDims(w.g.hall.size);
-  const rosa: Look = { gender: 'f', body: 'elderly', skin: 1, hair: 3, hairColor: 5, outfit: 9, color: 4, acc: ['glasses', 'necklace'], c: '#7a2a4a', c2: '#d9b45a' };
-  const victor: Look = { gender: 'm', skin: 0, hair: 2, hairColor: 6, outfit: 1, color: 1, acc: ['watch'], beard: 2, c: '#2a2a33', c2: '#7a1f2b' };
+  const rosa = ROSA; const victor = VICTOR;
   switch (page) {
     case 0: { w.stage.setDayTime(0.42); const r = w.addPerson(rosa, new THREE.Vector3(0, 0, d / 2 + 6), 0); r.anim = 'wave'; w.rig.flyTo(new THREE.Vector3(0, 3, d / 2 + 4), 26, 0.22, 0.35); break; }
     case 1: { w.stage.setDayTime(0.15); const st = app.g.s.staff.length ? app.g.s.staff : null; void st; const n = w.addPerson({ gender: 'f', skin: 1, hair: 0, hairColor: 2, outfit: 0, color: 0, acc: [], uniform: 'host' }, new THREE.Vector3(-1, 0, d / 2 + 5), 0); n.anim = 'cry';
@@ -56,7 +56,9 @@ function story(app: App, slot: number, diff: Difficulty, page: number) {
     case 3: { w.stage.setDayTime(0.1); w.viewNeighborhood(); break; }
   }
   const text = L(CONTENT.story[page]);
-  const el = div('story', h('div', { class: 'panel' }, h('div', { class: 'panel-head' }, t('story.title')), h('div', { class: 'text' + (page === 2 ? ' letter' : '') }, page === 2 ? h('div', { class: 'sub', style: { marginBottom: '6px' } }, t('story.letter')) : null, text),
+  const speaker = [ROSA, NADIA, ROSA, VICTOR][page]; const speakerName = [t('cast.rosa'), t('cast.nadia'), t('cast.rosa'), t('cast.victor')][page];
+  const portrait = h('div', { class: 'avatar story-face' }, h('img', { src: w.renderThumb(speaker, { face: true, size: 128 }), alt: '' }));
+  const el = div('story', h('div', { class: 'panel' }, h('div', { class: 'panel-head' }, portrait, h('span', {}, speakerName)), h('div', { class: 'text' + (page === 2 ? ' letter' : '') }, page === 2 ? h('div', { class: 'sub', style: { marginBottom: '6px' } }, t('story.letter')) : null, text),
     div('dots', ...[0, 1, 2, 3].map((i) => h('i', { class: i === page ? 'on' : '' }))),
     h('div', { class: 'row', style: { justifyContent: 'space-between', padding: '0 14px 14px' } }, btn(t('story.skip'), () => customize(app, slot, diff), 'ghost small'), btn([t('ui.next'), ic('next')], () => (page < 3 ? story(app, slot, diff, page + 1) : customize(app, slot, diff)), 'green', { id: 'story-next' }))));
   setScreen(el);

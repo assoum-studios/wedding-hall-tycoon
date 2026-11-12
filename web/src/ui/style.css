@@ -240,3 +240,14 @@ body:has(.backdrop) .guide .face { width: 54px; height: 54px; }
 .cal-day.booked { background: linear-gradient(var(--gold2), var(--gold)); color: #5a3a00; box-shadow: 0 2px 0 var(--gold-dark); }
 .cal-day.today { outline: 3px solid var(--blue); }
 .cal-dot { position: absolute; top: 1px; inset-inline-end: 2px; font-size: 10px; }
+
+.problem { min-width: 210px; }
+.pbtns { display: flex; gap: 5px; margin-top: 6px; justify-content: center; }
+.pbtns .btn.small { padding: 4px 8px; font-size: 12px; min-height: 32px; border-radius: 10px; }
+.table-face.need { pointer-events: auto !important; font-size: 26px; background: #fff; border-radius: 50%; width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 3px var(--gold), 0 4px 8px rgba(0,0,0,.3); animation: pulse .8s infinite; }
+.ringbtn { position: relative; overflow: visible; }
+.timing-ring { position: absolute; left: 50%; top: 50%; width: 128px; height: 128px; border-radius: 50%; border: 5px solid #fff; box-shadow: 0 0 12px #fff; transform: translate(-50%,-50%) scale(1.8); pointer-events: none; }
+
+.story-face { width: 46px; height: 46px; border-width: 2px; }
+
+.coin-fly { position: fixed; font-size: 26px; z-index: 96; pointer-events: none; transition: transform .9s cubic-bezier(.5,-0.3,.6,1), opacity .9s; filter: drop-shadow(0 2px 2px rgba(0,0,0,.3)); }

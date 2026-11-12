@@ -48,10 +48,15 @@ export function sfx(kind: 'tap' | 'coin' | 'cheer' | 'firework' | 'alert' | 'rin
 // ---- Music: a calm day theme and party music for the dancing ----
 const DAY = { bpm: 84, chords: [[60, 64, 67, 71], [57, 60, 64, 67], [62, 65, 69, 72], [55, 59, 62, 65]], mel: [76, 74, 72, 74, 76, 79, 76, 74, 72, 71, 72, 74, 69, 71, 72, 0] };
 const PARTY = { bpm: 118, chords: [[57, 60, 64], [53, 57, 60], [60, 64, 67], [55, 59, 62]], mel: [69, 0, 72, 69, 76, 0, 74, 72, 69, 0, 67, 69, 72, 0, 71, 0] };
+// Extra tracks so the music doesn't repeat: a gentle waltz-like day theme and a disco party groove.
+const DAY2 = { bpm: 76, chords: [[62, 66, 69, 73], [59, 62, 66, 69], [64, 67, 71, 74], [57, 61, 64, 67]], mel: [78, 0, 76, 74, 73, 0, 74, 76, 71, 0, 69, 71, 73, 74, 76, 0] };
+const DAY3 = { bpm: 92, chords: [[65, 69, 72, 76], [62, 65, 69, 72], [58, 62, 65, 69], [60, 64, 67, 70]], mel: [77, 76, 74, 72, 74, 0, 72, 69, 70, 72, 74, 0, 72, 70, 69, 0] };
+const PARTY2 = { bpm: 124, chords: [[60, 63, 67], [58, 62, 65], [56, 60, 63], [55, 58, 62]], mel: [72, 72, 0, 75, 0, 74, 72, 0, 70, 0, 72, 74, 75, 0, 74, 0] };
+const DAYS = [DAY, DAY2, DAY3]; const PARTIES = [PARTY, PARTY2];
 const mtof = (m: number) => 440 * Math.pow(2, (m - 69) / 12);
 export function playMusic(kind: 'day' | 'party' | 'none') {
   if (track === kind) return; track = kind; if (timer) { clearInterval(timer); timer = null; } if (kind === 'none' || !ctx) return;
-  const s = kind === 'day' ? DAY : PARTY; const beat = 60 / s.bpm / 2; step = 0;
+  const s = kind === 'day' ? DAYS[Math.floor(Math.random() * DAYS.length)] : PARTIES[Math.floor(Math.random() * PARTIES.length)]; const beat = 60 / s.bpm / 2; step = 0;
   timer = window.setInterval(() => {
     if (!ctx || ctx.state !== 'running') return;
     const bar = Math.floor(step / 8) % s.chords.length; const ch = s.chords[bar];

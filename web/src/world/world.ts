@@ -12,6 +12,7 @@ import { hallDims, footprint, canPlace, ensureLayout } from './layout';
 import { ITEM_BY_ID, CFG, CONTENT } from '../core/data';
 import { staffIn, managerOf, staffNeeds } from '../staff/staff';
 import { randomLook } from '../characters/looks';
+import { VICTOR } from '../characters/cast';
 import { Rng, vrand } from '../core/rng';
 import type { NightSim, ActiveProblem } from '../weddings/night';
 import * as Props from './props';
@@ -57,6 +58,11 @@ export class World {
       this.dayChore(p, i);
     });
     // a few visitors walking on the plaza
+    // Victor Crane drops by in person during the rivalry chapters to look at his competition.
+    if ([3, 5, 10].includes(this.g.s.chapter) || (this.g.s.chapter > 3 && this.g.s.day % 6 === 3)) {
+      const v = this.addPerson(VICTOR, new THREE.Vector3(-6, 0, STREET_Z - 6), Math.PI, 'victor'); const { d: hd } = hallDims(this.g.hall.size);
+      v.walkPath([new THREE.Vector3(-3, 0, hd / 2 + 7)], 'crossed', Math.PI, () => { v.setEmote('angry', 3); setTimeout(() => { if (this.people.includes(v)) v.walkPath([new THREE.Vector3(-40, 0, STREET_Z - 6.5)], 'idle', null, () => { if (this.people.includes(v)) v.obj.visible = false; }); }, 6000); });
+    }
     const peds = this.stage.quality === 'smooth' ? 6 : 12; for (let i = 0; i < peds; i++) { const p = this.addPerson(randomLook(this.rng), new THREE.Vector3(-60 + i * 11, 0, STREET_Z - 6.5), 0, 'visitor'); p.data.side = i % 2; this.wander(p); }
     void w;
   }

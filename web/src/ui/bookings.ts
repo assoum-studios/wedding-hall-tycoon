@@ -5,6 +5,7 @@ import { t, L, money, num } from '../core/i18n';
 import { CFG, CONTENT, BIZ, HALLS } from '../core/data';
 import { invoiceLines, invoiceTotals, evaluateOffer, book, rejectRequest, dateTaken, referralOptions, refer, referChance, meetMiddle, type InvoiceLine } from '../weddings/clients';
 import { planMatches, managerPlan } from '../weddings/night';
+import { FOOD, type FoodTier } from '../weddings/quality';
 import { managerOf, effSkill } from '../staff/staff';
 import { acceptSmall, declineSmall } from '../business/plots';
 import { h, div, btn, ic, modal, tabs, toast, bar } from './dom';
@@ -137,6 +138,13 @@ function calendarView(app: App, rerender: () => void, focus?: string) {
 
 export function planning(app: App, b: Booking, onDone?: () => void) {
   const g = app.g; const r = b.req; let plan: Plan = b.plan.planned ? { ...b.plan } : { theme: 'classic', flower: 'white', light: 'chandeliers', music: 'dj', venue: 'main', planned: false };
+  // Seating plan puzzle: put each guest group in a zone. Rules come from the couple (feuding families, VIPs, kids).
+  const feud = r.story % 3 === 0; const groups = ['brideFam', 'groomFam', 'friends', 'vip', 'kids'] as const; const zones = ['front', 'middle', 'back'] as const;
+  const seat: Record<string, string> = (b as any).seatPlan ? { ...(b as any).seatPlan } : { brideFam: 'middle', groomFam: 'middle', friends: 'middle', vip: 'middle', kids: 'middle' };
+  const seatScore = () => { let sc = 0; sc += seat.vip === 'front' ? 0.3 : seat.vip === 'back' ? -0.3 : 0; sc += seat.kids === 'back' ? 0.2 : seat.kids === 'front' ? -0.25 : 0;
+    sc += seat.brideFam !== 'back' ? 0.15 : -0.15; sc += seat.groomFam !== 'back' ? 0.15 : -0.15; sc += seat.friends === 'middle' || seat.friends === 'back' ? 0.1 : 0;
+    if (feud) sc += seat.brideFam === seat.groomFam ? -0.5 : 0.2; return Math.max(-1, Math.min(1, sc)); };
+  if (!plan.food) plan.food = 'standard';
   const venues = Object.keys(CFG.venues).filter((v) => v === 'main' || g.hasPlot(b.hall, CFG.venues[v].plot));
   const preview = () => { if (app.world.mode === 'day' && b.hall === g.s.activeHall) app.world.view.applyPlan(plan); };
   const m = modal(t('plan.title', { n: L(r.groom) + ' & ' + L(r.bride) }), [], { onClose: () => { if (app.world.mode === 'day') app.world.view.applyPlan(null); onDone?.(); } });
@@ -152,9 +160,14 @@ export function planning(app: App, b: Booking, onDone?: () => void) {
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.lighting')), chips(Object.keys(CFG.lighting), plan.light, (id) => L(CFG.lighting[id]), (id) => CFG.lighting[id].color, (id) => (plan.light = id)),
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.music')), chips(Object.keys(CFG.music), plan.music, (id) => L(CFG.music[id]), () => null, (id) => (plan.music = id)),
       h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.venue')), chips(venues, plan.venue, (id) => L(CFG.venues[id]), () => null, (id) => (plan.venue = id)),
+      h('div', { class: 'title', style: { marginTop: '10px' } }, t('plan.food')), chips(['standard', 'premium', 'luxury'] as any[], plan.food!, (id) => t('food.' + id) + ' · +' + money(Math.round(r.guests * (CFG.menus[r.menu]?.cost ?? 20) * (FOOD[id as FoodTier].costMult - 1))), () => null, (id) => (plan.food = id)),
+      h('div', { class: 'title', style: { marginTop: '12px' } }, t('seat.title')), h('div', { class: 'sub' }, feud ? '⚠ ' + t('seat.feud') : t('seat.help')),
+      ...groups.map((gr) => h('div', { class: 'row wrap', style: { margin: '4px 0' } }, h('span', { style: { width: '120px', fontWeight: '800' } }, t('seat.' + gr)),
+        ...zones.map((z) => h('button', { class: 'choice' + (seat[gr] === z ? ' on' : ''), onClick: () => { seat[gr] = z; render(); } }, t('zone.' + z))))),
+      h('div', { class: 'sub', style: { marginTop: '4px' } }, t('seat.score', { s: Math.round(seatScore() * 100) })),
       h('div', { class: 'row wrap', style: { justifyContent: 'flex-end', marginTop: '14px' } },
         mgr ? btn(t('plan.byManager', { n: L(mgr.name) }), () => { b.plan = managerPlan(g, b, effSkill(mgr)); toast(t('plan.managerDone'), 'good'); m.close(); }, 'ghost') : null,
-        btn([ic('check'), t('plan.confirm')], () => { b.plan = { ...plan, planned: true }; sfx('success'); toast(t('plan.saved'), 'good'); m.close(); app.tutorial?.event('planned'); }, 'green', { id: 'plan-confirm' })),
+        btn([ic('check'), t('plan.confirm')], () => { b.plan = { ...plan, planned: true, seating: seatScore() }; (b as any).seatPlan = { ...seat }; sfx('success'); toast(t('plan.saved'), 'good'); m.close(); app.tutorial?.event('planned'); }, 'green', { id: 'plan-confirm' })),
     ]);
   };
   render(); preview();

@@ -83,8 +83,14 @@ export function animate(c: CharacterMesh, anim: Anim, t: number, face: Face = 'h
   rot(c, B.thL, thL[0], thL[1], thL[2]); rot(c, B.thR, thR[0], thR[1], thR[2]); rot(c, B.shL, shL[0], shL[1], shL[2]); rot(c, B.shR, shR[0], shR[1], shR[2]);
   rot(c, B.ftL, ftL[0], ftL[1], ftL[2]); rot(c, B.ftR, ftR[0], ftR[1], ftR[2]);
   c.bones[B.hips].position.y = c.restPos[B.hips].y + lift + breathe * 0.2;
-  // Facial expression: brows and mouth.
+  // Facial expression: eyes (blink / widen), brows and mouth.
   const bl = c.bones[B.browL], br = c.bones[B.browR], m = c.bones[B.mouth];
+  const eL = c.bones[B.eyeL], eR = c.bones[B.eyeR];
+  if (eL && eR) {
+    const cyc = (T * 0.31) % 1; const blink = cyc < 0.035 ? 0.12 : 1; // a quick blink every ~3 seconds, desynced per person
+    const open = face === 'excited' ? 1.18 : face === 'angry' ? 0.7 : face === 'crying' ? 0.55 : face === 'worried' ? 1.05 : 1;
+    eL.scale.set(1, blink * open, 1); eR.scale.set(1, blink * open, 1);
+  }
   switch (face) {
     case 'excited': bl.position.y += d.head * 0.06; br.position.y += d.head * 0.06; m.scale.set(1.15, 1.6, 1); break;
     case 'worried': rot(c, B.browL, 0, 0, 0.35); rot(c, B.browR, 0, 0, -0.35); m.scale.set(0.8, -0.6, 1); break;

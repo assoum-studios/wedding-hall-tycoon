@@ -72,7 +72,10 @@ export function assign(g: Game, e: Employee, hallIdx: number) {
   if (e.role === 'manager') { setManager(g, hallIdx, e.id); return; }
   e.hall = hallIdx; g.emit('staff');
 }
-export function effSkill(e: Employee) { return Math.max(1, Math.min(5.5, e.skill + (STAFF.traits[e.trait]?.skill ?? 0) - (e.morale < 30 ? 0.7 : 0))); }
+export function effSkill(e: Employee) { return Math.max(1, Math.min(5.5, e.skill + (STAFF.traits[e.trait]?.skill ?? 0) - (e.morale < 30 ? 0.7 : 0) - ((e.fatigue ?? 0) > 60 ? 0.6 : 0))); }
+export function resting(g: Game, e: Employee) { return (e.restUntil ?? -1) >= g.s.day; }
+/** A day off: fatigue drops a lot and morale goes up, but they miss the next day's weddings. */
+export function giveDayOff(g: Game, e: Employee) { if (resting(g, e)) return false; e.restUntil = g.s.day; e.fatigue = Math.max(0, (e.fatigue ?? 0) - 45); e.morale = Math.min(100, e.morale + 6); g.emit('staff'); return true; }
 
 /** How many of each role a wedding of this size needs in a hall. */
 export function staffNeeds(g: Game, hallIdx: number, guests: number) {
@@ -89,13 +92,13 @@ export function staffIn(g: Game, hallIdx: number, role?: string) { return g.s.st
 /** Missing count per role for a wedding. */
 export function shortages(g: Game, hallIdx: number, guests: number) {
   const need = staffNeeds(g, hallIdx, guests); const out: Record<string, number> = {};
-  for (const r in need) { const have = staffIn(g, hallIdx, r).filter((e) => e.morale > 5).length; if (have < need[r]) out[r] = need[r] - have; }
+  for (const r in need) { const have = staffIn(g, hallIdx, r).filter((e) => e.morale > 5 && !resting(g, e)).length; if (have < need[r]) out[r] = need[r] - have; }
   return out;
 }
 export function avgSkill(g: Game, hallIdx: number, role: string) { const a = staffIn(g, hallIdx, role); return a.length ? a.reduce((s, e) => s + effSkill(e), 0) / a.length : 1; }
 
 /** Called after each wedding: everyone in that hall worked it. */
-export function workedWedding(g: Game, hallIdx: number) { for (const e of staffIn(g, hallIdx)) { e.weekWeddings++; if (STAFF.traits[e.trait]?.growth && g.rng.chance(0.08) && e.skill < 5) e.skill++; } }
+export function workedWedding(g: Game, hallIdx: number) { for (const e of staffIn(g, hallIdx)) { if (resting(g, e)) continue; e.weekWeddings++; e.fatigue = Math.min(100, (e.fatigue ?? 0) + 18); if (STAFF.traits[e.trait]?.growth && g.rng.chance(0.08) && e.skill < 5) e.skill++; } }
 
 /** Daily morale: underpaid or overworked staff lose morale, ask for raises and finally quit. */
 export function dailyMorale(g: Game) {
@@ -103,7 +106,8 @@ export function dailyMorale(g: Game) {
   for (const e of [...g.s.staff]) {
     if (e.named === 'karim' || e.named === 'nadia') { e.morale = Math.max(e.morale, 40); }
     const fair = wageFor(e.role, e.skill);
-    let d = M.dailyRecovery;
+    e.fatigue = Math.max(0, (e.fatigue ?? 0) - 12);
+    let d = M.dailyRecovery; if ((e.fatigue ?? 0) > 80) d -= 2;
     if (e.wage < fair * 0.95) d -= M.underpaidPenalty * decay;
     if (e.weekWeddings > M.maxWeddingsPerWeek) d -= M.overworkPenalty * decay * 0.3;
     if (g.s.money < 0) d -= 1.5 * decay;
