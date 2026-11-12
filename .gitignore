@@ -8,3 +8,6 @@ android/local.properties
 *.jks
 *.keystore
 .DS_Store
+
+# Downloaded release bundles (delivered separately, not source)
+release-*/
