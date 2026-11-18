@@ -2,4 +2,4 @@
 
 - App ID: ca-app-pub-9264992960554966~7841706150
 - Rewarded ad unit: ca-app-pub-9264992960554966/1052936526
-- Interstitial ad unit: (pending from owner)
+- Interstitial ad unit: ca-app-pub-9264992960554966/6825631245
