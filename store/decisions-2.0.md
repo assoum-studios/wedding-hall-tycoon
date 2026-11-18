@@ -8,7 +8,7 @@
 - Privacy policy: write one (English + Arabic) covering ads (AdMob, advertising ID, GDPR consent), Google Play purchases, on-device saves, no account or personal data collected by the studio, children's notice. Contact email: assoumstudios@gmail.com (owner asked for it to be used). Host it free on GitHub Pages and send the link with the store kit, plus the steps the owner must click to turn Pages on.
 - In-app purchases (FINAL, set by the owner). Exactly these 7 products:
   - remove_ads: Remove Ads, $0.99 (no interstitials; rewarded stay optional)
-  - starter_bundle: Starter Bundle, $1.99 (Remove Ads + $75,000 + Luxury Decor Pack; shown to new players, hidden after purchase)
+  - starter_bundle: Starter Bundle, $1.99 (Remove Ads + $200,000 + Luxury Decor Pack; shown to new players, hidden after purchase)
   - cash_small: $100,000, $0.99
   - cash_medium: $200,000, $1.99
   - cash_large: $1,000,000, $4.99
