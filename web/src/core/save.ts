@@ -27,3 +27,23 @@ export function load(slot: number): GameState | null {
 }
 export function remove(slot: number) { try { localStorage.removeItem(KEY(slot)); } catch {} }
 function migrate(s: any): GameState { if (!s.version) s.version = SAVE_VERSION; return s as GameState; }
+
+/** Save backup as text (for iPhone players and moving between devices). Photos are left out to keep it short. */
+export function exportCode(state: GameState): string {
+  const slim = { ...state, photos: [], posts: state.posts.map((p) => ({ ...p, photo: undefined })), lastReport: null };
+  const json = JSON.stringify(slim); const bytes = new TextEncoder().encode(json);
+  let bin = ''; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return 'WHT1:' + btoa(bin);
+}
+/** Returns the restored game state, or null if the code is not a valid save. */
+export function importCode(code: string, slot: number): GameState | null {
+  try {
+    const c = code.trim().replace(/^WHT1:/, '').replace(/\s+/g, ''); const bin = atob(c); const bytes = new Uint8Array(bin.length);
+    for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    const s = JSON.parse(new TextDecoder().decode(bytes));
+    if (!s || typeof s !== 'object' || !Array.isArray(s.halls) || typeof s.money !== 'number' || !s.owner) return null;
+    s.slot = slot; return migrate(s);
+  } catch { return null; }
+}
+/** Ask the browser to keep our data (helps iPhone home-screen apps keep saves). */
+export function requestPersistentStorage() { try { (navigator as any).storage?.persist?.(); } catch {} }

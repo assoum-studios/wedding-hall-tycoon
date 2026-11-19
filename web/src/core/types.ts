@@ -111,5 +111,6 @@ export interface GameState {
   suppliers?: Record<string, number>; // flowers / cake / photo: 0 budget, 1 standard, 2 premium
   investor?: { until: number; share: number; amount: number } | null;
   wardrobe?: { outfit: string; car: string }; // unlockable owner outfit + car
-  legacy?: number; // legacy restarts done (each adds an income bonus)
+  legacy?: number;
+  adDay?: Record<string, number>; // last in-game day each rewarded-ad bonus was used // legacy restarts done (each adds an income bonus)
 }

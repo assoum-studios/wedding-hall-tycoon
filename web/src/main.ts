@@ -12,9 +12,10 @@ import { book, invoiceLines } from './weddings/clients';
 import { logoSVG } from './ui/logo';
 import { showTitle } from './ui/title';
 import { suspend } from './audio/audio';
+import { requestPersistentStorage } from './core/save';
 
 async function boot() {
-  initLang();
+  initLang(); requestPersistentStorage();
   // Loading screen: logo in the right language, a progress bar and a tip.
   const tipEl = document.getElementById('boot-tip'); const bar = document.getElementById('boot-bar') as HTMLElement | null; const logo = document.getElementById('boot-logo') as HTMLImageElement | null;
   void logo; void logoSVG; void getLang;

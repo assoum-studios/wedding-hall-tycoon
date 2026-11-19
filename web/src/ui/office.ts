@@ -14,20 +14,36 @@ import { capacity, hallDims } from '../world/layout';
 import { runCheat, CHEATS_ENABLED } from '../core/cheats';
 import { h, div, btn, ic, modal, tabs, toast, bar, toggle, confirmBox, stars } from './dom';
 import { sfx } from '../audio/audio';
+import { onStoreChange, isNative, decorOwned, showRewarded, restore as restorePurchases, privacyOptionsRequired, showPrivacyOptions } from '../business/monetize';
+import { exportCode, importCode } from '../core/save';
+import { premiumView, openStore } from './storeUI';
 import { showHowTo } from './howto';
 import { OUTFITS_W, CARS, unlockedAt, wardrobe, ownerLook } from '../progress/wardrobe';
 
+/** Office: five groups (People, Operations, Assets, Finance, Expansion) with sub-tabs, plus Settings behind the gear. */
+const GROUPS: { id: string; icon: string; tabs: string[] }[] = [
+  { id: 'people', icon: '👥', tabs: ['staff', 'managers'] },
+  { id: 'operations', icon: '📣', tabs: ['marketing', 'suppliers'] },
+  { id: 'assets', icon: '🎀', tabs: ['shop', 'wardrobe', 'premium'] },
+  { id: 'finance', icon: '💰', tabs: ['money'] },
+  { id: 'expansion', icon: '🏛️', tabs: ['halls'] },
+];
 export function openOffice(app: App, tab = 'staff', focus?: string) {
   const g = app.g; let cur = tab;
-  const m = modal(t('office.title'), [], { cls: 'wide' });
+  const gear = h('button', { class: 'close gear', 'aria-label': t('office.settings'), id: 'btn-settings', onClick: () => { cur = 'settings'; focus = undefined; render(); } }, '⚙');
+  const m = modal(t('office.title'), [], { cls: 'wide', headExtra: gear });
   const render = () => {
-    const names = [{ id: 'staff', label: t('office.staff') }, { id: 'managers', label: t('office.managers') }, { id: 'marketing', label: t('office.marketing') }, { id: 'shop', label: t('office.shop') }, { id: 'suppliers', label: t('office.suppliers') }, { id: 'money', label: t('office.money') }, { id: 'halls', label: t('office.halls') }, { id: 'wardrobe', label: t('office.wardrobe') }, { id: 'settings', label: t('office.settings') }];
-    m.panel.querySelector('.tabs')?.remove(); m.panel.insertBefore(tabs(names, cur, (id) => { cur = id; focus = undefined; render(); }), m.body);
-    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), suppliers: () => suppliersView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), wardrobe: () => wardrobeView(app, render), settings: () => settingsView(app, m.close) };
+    const grp = GROUPS.find((x) => x.tabs.includes(cur));
+    m.panel.querySelectorAll('.tabs').forEach((e) => e.remove());
+    const top = tabs(GROUPS.map((x) => ({ id: x.id, label: x.icon + ' ' + t('office.group.' + x.id) })), grp?.id ?? '', (id) => { cur = GROUPS.find((x) => x.id === id)!.tabs[0]; focus = undefined; render(); });
+    top.classList.add('group-tabs'); m.panel.insertBefore(top, m.body);
+    if (grp && grp.tabs.length > 1) { const sub = tabs(grp.tabs.map((id) => ({ id, label: t('office.' + id) })), cur, (id) => { cur = id; focus = undefined; render(); }); sub.classList.add('sub-tabs'); m.panel.insertBefore(sub, m.body); }
+    const views: Record<string, () => (Node | null)[]> = { staff: () => staffView(app, render, focus), managers: () => managersView(app, render), marketing: () => marketingView(app, render), shop: () => shopView(app, render), suppliers: () => suppliersView(app, render), money: () => moneyView(app, render), halls: () => hallsView(app, render, focus), wardrobe: () => wardrobeView(app, render), premium: () => premiumView(app, render), settings: () => settingsView(app, m.close) };
     m.setBody(views[cur]());
   };
-  const offs = ['staff', 'money', 'loans', 'plots', 'research', 'upgrade', 'candidates'].map((e) => g.on(e, () => { if (document.body.contains(m.el)) render(); }));
-  const oc = m.close; m.close = () => { offs.forEach((f) => f()); oc(); app.refresh(); };
+  const offs = ['staff', 'money', 'loans', 'plots', 'research', 'upgrade', 'candidates', 'cosmetics'].map((e) => g.on(e, () => { if (document.body.contains(m.el)) render(); }));
+  const offStore = onStoreChange(() => { if (document.body.contains(m.el)) render(); });
+  const oc = m.close; m.close = () => { offs.forEach((f) => f()); offStore(); oc(); app.refresh(); };
   render(); app.tutorial?.event('office');
   return m;
 }
@@ -116,9 +132,15 @@ function suppliersView(app: App, rerender: () => void) {
       h('b', {}, t('sup.tier' + tier) + ' · ' + t('sup.name.' + k + tier)), h('span', { class: 'sub' }, t('sup.effect', { c: Math.round((SUPPLIER_COST[tier] - 1) * 100), h: SUPPLIER_HAPPY[tier] })))))))];
 }
 
+/** A rewarded-ad bonus card (Android only, once per in-game day). */
+function adCard(app: App, key: string, title: string, sub: string, grant: () => void, rerender: () => void): Node | null {
+  const g = app.g; if (!isNative()) return null; const used = (g.s.adDay ?? {})[key] === g.s.day;
+  return h('div', { class: 'card ad-card' }, h('div', { class: 'row' }, h('div', { class: 'grow' }, h('div', { class: 'title' }, '📺 ' + title), h('div', { class: 'sub' }, sub)),
+    used ? h('span', { class: 'pill' }, t('ads.tomorrow')) : btn(t('ads.watch'), async () => { if (await showRewarded(key)) { g.s.adDay = { ...(g.s.adDay ?? {}), [key]: g.s.day }; grant(); sfx('success'); app.persist(); } rerender(); }, 'small gold')));
+}
 function marketingView(app: App, rerender: () => void) {
   const g = app.g;
-  return [h('div', { class: 'card' }, h('div', { class: 'title' }, t('mkt.boost', { p: Math.round(marketingBoost(g) * 100) })), bar(marketingBoost(g) / BIZ.marketingCap, 'gold'), h('div', { class: 'sub' }, t('mkt.cap', { p: Math.round(BIZ.marketingCap * 100) }))),
+  return [adCard(app, 'boost', t('ads.boost.t'), t('ads.boost.d'), () => { g.s.campaigns.push({ id: 'ad_boost', until: g.s.day + 1 }); g.emit('marketing'); toast(t('ads.boost.done'), 'good'); }, rerender),h('div', { class: 'card' }, h('div', { class: 'title' }, t('mkt.boost', { p: Math.round(marketingBoost(g) * 100) })), bar(marketingBoost(g) / BIZ.marketingCap, 'gold'), h('div', { class: 'sub' }, t('mkt.cap', { p: Math.round(BIZ.marketingCap * 100) }))),
     div('grid2', ...BIZ.marketing.map((c: any) => { const on = campaignActive(g, c.id); const left = on ? g.s.campaigns.filter((x) => x.id === c.id).reduce((a, x) => Math.max(a, x.until - g.s.day + 1), 0) : 0;
       return h('div', { class: 'card' + (on ? ' hl' : '') }, h('div', { class: 'title' }, L(c)), h('div', { class: 'sub' }, t('mkt.effect', { p: Math.round(c.boost * 100), d: c.days }) + (c.vip ? ' · ' + t('mkt.vip') : '') + (c.billboard ? ' · ' + t('mkt.billboard') : '')),
         h('div', { class: 'row', style: { marginTop: '8px' } }, h('span', { class: 'pill green' }, money(c.cost)), on ? h('span', { class: 'pill gold' }, t('mkt.daysLeft', { n: left })) : null, h('span', { class: 'grow' }),
@@ -128,18 +150,21 @@ function marketingView(app: App, rerender: () => void) {
 function shopView(app: App, rerender: () => void) {
   const g = app.g; const cats = [...new Set(BIZ.shop.map((x: any) => x.cat))] as string[];
   return cats.map((cat) => h('div', {}, h('div', { class: 'title', style: { margin: '8px 0' } }, t('shop.cat.' + cat)), div('grid3', ...BIZ.shop.filter((x: any) => x.cat === cat).map((it: any) => {
-    const owned = g.s.shopOwned.includes(it.id); const equipped = g.hall.cosmetics[cat] === it.id; const locked = (it.minChapter ?? 0) > g.s.chapter;
+    const owned = g.s.shopOwned.includes(it.id) || (it.premium && decorOwned()); const equipped = g.hall.cosmetics[cat] === it.id; const locked = (it.minChapter ?? 0) > g.s.chapter;
+    if (it.premium && !owned) return h('div', { class: 'card premium-card' }, h('div', { style: { height: '46px', borderRadius: '10px', background: it.color, marginBottom: '6px', boxShadow: 'inset 0 -6px 0 rgba(0,0,0,.12)' } }), h('div', { style: { fontWeight: '900' } }, '💎 ' + L(it)), btn(t('store.inPack'), () => openStore(app), 'small gold'));
+    if (it.premium && owned && !g.s.shopOwned.includes(it.id)) g.s.shopOwned.push(it.id);
     return h('div', { class: 'card' + (equipped ? ' hl' : '') }, h('div', { style: { height: '46px', borderRadius: '10px', background: it.color, marginBottom: '6px', boxShadow: 'inset 0 -6px 0 rgba(0,0,0,.12)' } }), h('div', { style: { fontWeight: '800' } }, L(it)),
       locked ? h('div', { class: 'sub' }, t('shop.chapter', { n: it.minChapter })) : owned ? btn(equipped ? t('shop.remove') : t('shop.equip'), () => { equipped ? equip(g, null, cat) : equip(g, it.id); rerender(); }, 'small ' + (equipped ? 'ghost' : 'green')) : btn(money(it.cost), () => { if (buy(g, it.id)) { sfx('success'); toast(t('shop.bought', { n: L(it) }), 'good'); } else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small gold'));
   }))));
 }
 
 function moneyView(app: App, rerender: () => void) {
-  const g = app.g; const s = g.s;
+  const g = app.g; const s = g.s; const grant = 2500 + 1000 * s.chapter;
+  const adGrant = adCard(app, 'grant', t('ads.grant.t', { m: money(grant) }), t('ads.grant.d'), () => { g.addMoney(grant); toast(t('ads.grant.done', { m: money(grant) }), 'good'); }, rerender);
   const upkeep = s.halls.filter((x) => x.owned).reduce((a, hh) => a + CFG.upkeep.baseDaily + CFG.upkeep.perSizeLevel * hh.size + CFG.upkeep.perUpgradeLevel * Object.values(hh.upgrades).reduce((x, y) => x + y - 1, 0), 0);
   const biz = s.halls.reduce((a, hh, i) => a + Object.keys(hh.plots).reduce((x, id) => x + plotIncome(g, i, id), 0), 0);
   const recent = s.history.slice(-7).reverse();
-  return [
+  return [adGrant,
     h('div', { class: 'card' }, h('div', { class: 'list-line' }, h('span', {}, t('money.balance')), h('b', { class: s.money < 0 ? 'neg' : 'money' }, money(s.money))), h('div', { class: 'list-line' }, h('span', {}, t('money.upkeep')), h('b', {}, '-' + money(upkeep))), h('div', { class: 'list-line' }, h('span', {}, t('money.payroll')), h('b', {}, '-' + money(s.staff.reduce((a, e) => a + e.wage, 0) * 7))), h('div', { class: 'list-line' }, h('span', {}, t('money.business')), h('b', { class: 'money' }, '+' + money(biz)))),
     s.rosaDebt > 0 ? h('div', { class: 'card hl' }, h('div', { class: 'title' }, t('money.rosaDebt', { m: money(s.rosaDebt) })), h('div', { class: 'sub' }, t('money.rosaHelp', { m: money(CFG.start.rosaDebtMinWeekly) })), h('div', { class: 'row wrap', style: { marginTop: '8px' } }, ...[1000, 5000, 10000].map((a) => btn(t('money.pay', { m: money(a) }), () => { if (payRosaDebt(g, a)) sfx('coin'); else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small')), btn(t('money.payAll'), () => { if (payRosaDebt(g, s.rosaDebt)) sfx('success'); else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small green'))) : h('div', { class: 'card' }, '✓ ' + t('money.rosaPaid')),
     (() => { const inv = s.investor; const offer = 20000 * g.s.chapter + 10000; const active = inv && inv.until >= s.day;
@@ -178,7 +203,7 @@ function hallsView(app: App, rerender: () => void, focusPlot?: string) {
   })));
   out.push(h('div', { class: 'title', style: { margin: '12px 0 6px' } }, t('halls.research')));
   const R = s.research;
-  if (R.active) { const r = HALLS.research.find((x: any) => x.id === R.active); out.push(h('div', { class: 'card hl' }, t('research.active', { n: L(r), d: Math.max(0, R.until - s.day) }))); }
+  if (R.active) { const r = HALLS.research.find((x: any) => x.id === R.active); out.push(h('div', { class: 'card hl' }, t('research.active', { n: L(r), d: Math.max(0, R.until - s.day) }))); if (R.until - s.day > 1) out.push(adCard(app, 'research', t('ads.research.t'), t('ads.research.d'), () => { R.until = Math.min(R.until, s.day + 1); g.emit('research'); toast(t('ads.research.done'), 'good'); }, rerender) as any); }
   out.push(div('grid3', ...HALLS.research.map((r: any) => { const done = R.done.includes(r.id); const avail = researchAvailable(g, r.id);
     return h('div', { class: 'card' + (done ? ' hl' : '') }, h('div', { style: { fontWeight: '900' } }, L(r)), h('div', { class: 'sub' }, t('research.desc.' + r.id)), done ? h('span', { class: 'pill green' }, '✓') : avail && !R.active ? btn(t('research.start', { m: money(r.cost), d: r.days }), () => { if (startResearch(g, r.id)) { sfx('success'); } else toast(t('ui.noMoney'), 'bad'); rerender(); }, 'small') : h('span', { class: 'sub' }, r.requires.length && !avail ? t('research.needs') : ''));
   })));
@@ -202,6 +227,12 @@ function settingsView(app: App, closeOffice: () => void) {
     row(t('settings.bubbles'), toggle(st.bubbles, (v) => { st.bubbles = v; apply(); })), row(t('settings.floating'), toggle(st.floatingMoney, (v) => { st.floatingMoney = v; apply(); })),
     row(t('settings.language'), seg(['en', 'ar'] as const, getLang(), (o) => (o === 'en' ? 'English' : 'العربية'), (o) => { setLang(o); closeOffice(); })),
     CHEATS_ENABLED ? row(t('settings.cheat'), h('div', { class: 'row', style: { width: '260px' } }, cheatIn, btn(t('settings.apply'), () => { const ok = runCheat(g, cheatIn.value); toast(ok ? t('settings.cheatOk') : t('settings.cheatBad'), ok ? 'good' : 'bad'); if (ok) { app.world.loadHall(); app.world.setupDay(); app.refresh(); } }, 'small'))) : null,
+    h('div', { class: 'title', style: { marginTop: '12px' } }, t('save.backup')), h('div', { class: 'sub' }, t('save.backupHelp')),
+    h('div', { class: 'row wrap', style: { marginTop: '6px' } },
+      btn('📋 ' + t('save.copy'), async () => { app.persist(); const code = exportCode(g.s); try { await navigator.clipboard.writeText(code); toast(t('save.copied'), 'good'); } catch { showCode(code); } }, 'small'),
+      btn('💾 ' + t('save.download'), () => { app.persist(); const blob = new Blob([exportCode(g.s)], { type: 'text/plain' }); const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'wedding-hall-tycoon-save.txt'; document.body.append(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000); }, 'small'),
+      btn('📥 ' + t('save.import'), () => importDialog(app, closeOffice), 'small ghost')),
+    isNative() ? h('div', { class: 'row wrap', style: { marginTop: '10px' } }, btn(t('store.restore'), () => restorePurchases(), 'small ghost'), privacyOptionsRequired() ? btn(t('settings.privacy'), () => showPrivacyOptions(), 'small ghost') : null) : null,
     h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('howto.title'), () => showHowTo(), 'ghost'), btn(t('settings.backToTitle'), () => { closeOffice(); app.backToTitle(); }, 'red'))),
     h('div', { class: 'sub', style: { textAlign: 'center' } }, t('settings.version', { v: '2.0.0' }))];
 }
@@ -216,11 +247,26 @@ function wardrobeView(app: App, rerender: () => void): (Node | null)[] {
   return [
     h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('wardrobe.help')),
     h('div', { class: 'title' }, t('wardrobe.outfits')),
-    div('grid3', ...OUTFITS_W.map((o) => { const open = unlockedAt(g, o.ch); const look = o.c ? (g.s.owner.gender === 'm' ? { ...g.s.owner, outfit: 0, c: o.c, c2: o.c2 } : { ...g.s.owner, outfit: 6, c: o.c, c2: o.c2 }) : g.s.owner;
-      return card(w.outfit === o.id, open, L(o.name), open ? '' : t('wardrobe.unlockCh', { n: o.ch }), open ? h('img', { src: app.world.renderThumb(look, { size: 110 }), style: { width: '90px', display: 'block', margin: '0 auto' } }) : null, () => { w.outfit = o.id; if (app.world.mode === 'day') app.world.setupDay(); }); })),
+    div('grid3', ...OUTFITS_W.map((o) => { const open = unlockedAt(g, o.ch, o.pack); const look = o.c ? (g.s.owner.gender === 'm' ? { ...g.s.owner, outfit: 0, c: o.c, c2: o.c2 } : { ...g.s.owner, outfit: 6, c: o.c, c2: o.c2 }) : g.s.owner;
+      return card(w.outfit === o.id, open, L(o.name), open ? '' : o.pack ? '💎 ' + t('store.owner_style_pack.t') : t('wardrobe.unlockCh', { n: o.ch }), open ? h('img', { src: app.world.renderThumb(look, { size: 110 }), style: { width: '90px', display: 'block', margin: '0 auto' } }) : null, () => { w.outfit = o.id; if (app.world.mode === 'day') app.world.setupDay(); }); })),
     h('div', { class: 'title', style: { marginTop: '12px' } }, t('wardrobe.cars')),
-    div('grid3', ...CARS.map((c) => { const open = unlockedAt(g, c.ch);
-      return card(w.car === c.id, open, L(c.name), open ? '' : t('wardrobe.unlockCh', { n: c.ch }), h('div', { style: { height: '22px', borderRadius: '8px', background: c.color, margin: '4px 0' } }), () => { w.car = c.id; app.world.view.buildPlots(g.hall); }); })),
+    div('grid3', ...CARS.map((c) => { const open = unlockedAt(g, c.ch, c.pack);
+      return card(w.car === c.id, open, L(c.name), open ? '' : c.pack ? '💎 ' + t('store.owner_style_pack.t') : t('wardrobe.unlockCh', { n: c.ch }), h('div', { style: { height: '22px', borderRadius: '8px', background: c.color, margin: '4px 0' } }), () => { w.car = c.id; app.world.view.buildPlots(g.hall); }); })),
   ];
 }
 void ownerLook;
+
+function showCode(code: string) {
+  const ta = h('textarea', { readonly: 'true', style: { width: '100%', height: '160px', fontSize: '11px' } }) as HTMLTextAreaElement; ta.value = code;
+  modal(t('save.code'), [h('div', { class: 'sub' }, t('save.copyManually')), ta], { cls: 'narrow' }); setTimeout(() => { ta.focus(); ta.select(); }, 100);
+}
+function importDialog(app: App, closeOffice: () => void) {
+  const ta = h('textarea', { placeholder: 'WHT1:…', style: { width: '100%', height: '140px', fontSize: '11px' } }) as HTMLTextAreaElement;
+  const file = h('input', { type: 'file', accept: '.txt,text/plain' }) as HTMLInputElement;
+  file.addEventListener('change', async () => { const f = file.files?.[0]; if (f) ta.value = await f.text(); });
+  const m = modal(t('save.import'), [h('div', { class: 'sub' }, t('save.importHelp')), ta, h('div', { style: { margin: '8px 0' } }, file),
+    h('div', { class: 'row', style: { justifyContent: 'flex-end' } }, btn(t('ui.cancel'), () => m.close(), 'ghost'), btn(t('save.importGo'), () => {
+      const s = importCode(ta.value, app.g.s.slot); if (!s) { toast(t('save.bad'), 'bad'); return; }
+      confirmBox(t('save.replace'), t('save.importGo'), () => { m.close(); closeOffice(); app.startNew(s.slot, s, false); toast(t('save.imported'), 'good'); });
+    }, 'green'))], { cls: 'narrow' });
+}

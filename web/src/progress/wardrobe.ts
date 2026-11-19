@@ -1,9 +1,10 @@
 // Wardrobe: owner outfits and cars unlocked as chapter rewards, plus the Legacy restart after the last chapter.
 import type { Game } from '../core/game';
 import type { Look, Bi } from '../core/types';
+import { styleOwned } from '../business/monetize';
 
-export interface OutfitDef { id: string; ch: number; name: Bi; c?: string; c2?: string; }
-export interface CarDef { id: string; ch: number; name: Bi; color: string; limo?: boolean; }
+export interface OutfitDef { id: string; ch: number; name: Bi; c?: string; c2?: string; pack?: boolean; }
+export interface CarDef { id: string; ch: number; name: Bi; color: string; limo?: boolean; pack?: boolean; }
 export const OUTFITS_W: OutfitDef[] = [
   { id: 'own', ch: 1, name: ['Your own style', 'أسلوبك الخاص'] },
   { id: 'midnight', ch: 2, name: ['Midnight blue', 'أزرق منتصف الليل'], c: '#101c40', c2: '#d4af37' },
@@ -12,6 +13,11 @@ export const OUTFITS_W: OutfitDef[] = [
   { id: 'royal', ch: 8, name: ['Royal purple', 'أرجواني ملكي'], c: '#3b1670', c2: '#f2c94c' },
   { id: 'gold', ch: 10, name: ['Golden gala', 'ذهبي فاخر'], c: '#b8902f', c2: '#141418' },
   { id: 'legend', ch: 12, name: ['Legend black', 'الأسود الأسطوري'], c: '#0c0c10', c2: '#d4af37' },
+  // Owner Style Pack (Google Play purchase)
+  { id: 'rose_gold', ch: 99, pack: true, name: ['Rose gold', 'ذهبي وردي'], c: '#e7a6a1', c2: '#fff1e6' },
+  { id: 'pearl', ch: 99, pack: true, name: ['Pearl white', 'أبيض لؤلؤي'], c: '#fbf7f2', c2: '#c9a24a' },
+  { id: 'velvet', ch: 99, pack: true, name: ['Velvet ruby', 'ياقوتي مخملي'], c: '#7a0f2e', c2: '#f2c94c' },
+  { id: 'sapphire', ch: 99, pack: true, name: ['Sapphire star', 'نجمة الياقوت'], c: '#1d3fa8', c2: '#e9edf7' },
 ];
 export const CARS: CarDef[] = [
   { id: 'hatch', ch: 1, name: ['City hatchback', 'سيارة صغيرة'], color: '#c0392b' },
@@ -20,8 +26,12 @@ export const CARS: CarDef[] = [
   { id: 'silver', ch: 7, name: ['Silver cruiser', 'الفضية'], color: '#bfc5cc' },
   { id: 'limo', ch: 9, name: ['Black limousine', 'ليموزين سوداء'], color: '#141418', limo: true },
   { id: 'goldlimo', ch: 11, name: ['Golden limousine', 'ليموزين ذهبية'], color: '#d4af37', limo: true },
+  // Owner Style Pack (Google Play purchase)
+  { id: 'pink_cabrio', ch: 99, pack: true, name: ['Pink convertible', 'سيارة مكشوفة وردية'], color: '#f59ab8' },
+  { id: 'mint_classic', ch: 99, pack: true, name: ['Mint classic', 'كلاسيكية نعناعية'], color: '#9fe0c9' },
+  { id: 'pearl_limo', ch: 99, pack: true, name: ['Pearl limousine', 'ليموزين لؤلؤية'], color: '#fdf6ec', limo: true },
 ];
-export function unlockedAt(g: Game, ch: number) { return (g.s.legacy ?? 0) > 0 || g.s.chapterDone || g.s.chapter >= ch; }
+export function unlockedAt(g: Game, ch: number, pack = false) { if (pack) return styleOwned(); return (g.s.legacy ?? 0) > 0 || g.s.chapterDone || g.s.chapter >= ch; }
 export function wardrobe(g: Game) { if (!g.s.wardrobe) g.s.wardrobe = { outfit: 'own', car: 'hatch' }; return g.s.wardrobe; }
 export function currentCar(g: Game) { return CARS.find((c) => c.id === wardrobe(g).car) ?? CARS[0]; }
 /** The owner's look with the equipped wardrobe outfit applied. */

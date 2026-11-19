@@ -2,7 +2,7 @@
 import type { Game } from '../core/game';
 import { BIZ } from '../core/data';
 export function marketingBoost(g: Game) {
-  let b = 0; for (const c of g.s.campaigns) if (c.until >= g.s.day) b += BIZ.marketing.find((m: any) => m.id === c.id)?.boost ?? 0;
+  let b = 0; for (const c of g.s.campaigns) if (c.until >= g.s.day) b += c.id === 'ad_boost' ? 0.3 : BIZ.marketing.find((m: any) => m.id === c.id)?.boost ?? 0;
   return Math.min(BIZ.marketingCap, b);
 }
 export function launch(g: Game, id: string) {

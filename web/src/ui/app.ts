@@ -24,6 +24,9 @@ import { openPhone, showIncomingCall } from './phoneUI';
 import { showNews } from './news';
 import { Tutorial } from './tutorial';
 import { showHowTo } from './howto';
+import { initMonetize, bindGame, setPremiumDecorList, isNative, showRewarded, maybeInterstitial } from '../business/monetize';
+import { maybeStarterOffer } from './storeUI';
+import { BIZ } from '../core/data';
 import { openBuild } from './buildUI';
 
 export class App {
@@ -42,6 +45,7 @@ export class App {
     onLang(() => { if (this.inGame && this.world.mode === 'day') { this.world.view.buildPlots(this.g.hall); } this.refresh(); });
     document.addEventListener('visibilitychange', () => { if (document.hidden) this.persist(); });
     window.addEventListener('pointerdown', () => initAudio(), { once: false });
+    initMonetize((text, kind) => toast(text, kind), (k, p) => t(k, p)); setPremiumDecorList(() => BIZ.shop.filter((x: any) => x.premium).map((x: any) => x.id));
     this.world.stage.start();
   }
   get inGame() { return this.g.s.slot >= 0; }
@@ -50,6 +54,7 @@ export class App {
   startNew(slot: number, s: GameState, fresh: boolean) {
     this.g = new Game(s); this.world.g = this.g; this.world.view.g = this.g;
     if (fresh) startGame(this.g);
+    bindGame(this.g);
     this.applySettings(); this.bindGame();
     this.world.loadHall(); this.world.setupDay(); this.world.viewHall(true);
     this.tutorial = new Tutorial(this);
@@ -90,7 +95,7 @@ export class App {
     try { localStorage.setItem('whot_quality', s.quality); } catch {}
   }
   persist() { if (this.inGame && !this.night) { this.g.sync(); save(this.g.s); } }
-  backToTitle() { this.persist(); closeAll(); this.night = null; this.nightUI?.remove(); this.nightUI = null; this.tutorial?.stop(); this.g = new Game(newGameState(-1, 'normal', defaultOwner('m'), '', 42)); this.world.g = this.g; this.world.view.g = this.g; this.world.loadHall(); this.world.mode = 'title'; this.world.clearPeople(); this.world.viewEntrance(true); this.hud.replaceChildren(); playMusic('day'); showTitle(this); }
+  backToTitle() { this.persist(); closeAll(); bindGame(null); this.night = null; this.nightUI?.remove(); this.nightUI = null; this.tutorial?.stop(); this.g = new Game(newGameState(-1, 'normal', defaultOwner('m'), '', 42)); this.world.g = this.g; this.world.view.g = this.g; this.world.loadHall(); this.world.mode = 'title'; this.world.clearPeople(); this.world.viewEntrance(true); this.hud.replaceChildren(); playMusic('day'); showTitle(this); }
 
   // ---------------- HUD ----------------
   refresh() { if (this.inGame && !this.night && this.world.mode !== 'build') this.renderHud(); }
@@ -253,7 +258,7 @@ export class App {
   showReport(rec: WeddingRecord) {
     const g = this.g;
     if (rec.profit > 0) setTimeout(() => coinBurst(16), 600);
-    const close = () => { this.nightUI?.remove(); this.nightUI = null; this.night = null; this.world.endNight(); this.world.viewHall(); playMusic('day'); this.refresh(); this.persist(); this.tutorial?.event('report'); if (chapterReady(g)) setTimeout(() => openGoals(this, 'chapter'), 300); };
+    const close = () => { this.nightUI?.remove(); this.nightUI = null; this.night = null; this.world.endNight(); this.world.viewHall(); playMusic('day'); this.refresh(); this.persist(); this.tutorial?.event('report'); if (chapterReady(g)) setTimeout(() => openGoals(this, 'chapter'), 300); else if (g.s.history.length === 1) setTimeout(() => maybeStarterOffer(this), 900); else maybeInterstitial(g.s.day); };
     const line = (k: string, v: string, cls = '') => h('div', { class: 'list-line' }, h('span', {}, k), h('b', { class: cls }, v));
     const label = (k: string) => t('plan.' + k);
     const m = modal(t('report.title'), [
@@ -267,6 +272,7 @@ export class App {
         line(t('report.rep'), (rec.repChange >= 0 ? '+' : '') + rec.repChange.toFixed(1))),
       h('div', { class: 'card' }, h('div', { class: 'title' }, t('report.loved')), h('div', { class: 'sub' }, rec.loved.map(label).join(', ') || '—'), h('div', { class: 'title', style: { marginTop: '6px' } }, t('report.wanted')), h('div', { class: 'sub' }, rec.wanted.map(label).join(', ') || '—')),
       rec.skipped ? h('div', { class: 'card hl' }, t('report.skipped')) : null,
+      isNative() && rec.profit > 0 ? (() => { const b = btn('📺 ' + t('ads.double', { m: money(rec.profit) }), async () => { (b as HTMLButtonElement).disabled = true; if (await showRewarded('double')) { g.addMoney(rec.profit, true); sfx('coin'); coinBurst(20); toast(t('ads.doubled', { m: money(rec.profit) }), 'good'); b.remove(); this.persist(); } else (b as HTMLButtonElement).disabled = false; }, 'gold', { style: { width: '100%', marginBottom: '8px' } }); return b; })() : null,
       h('div', { class: 'row', style: { justifyContent: 'flex-end' } }, btn(t('ui.continue'), () => m.close(), 'green big', { id: 'btn-report-ok' })),
     ], { onClose: close });
   }
