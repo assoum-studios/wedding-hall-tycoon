@@ -90,3 +90,11 @@ store/                Play Store icon and feature graphic
 a 30-day automated playthrough on every difficulty (3 seeds each), and a save → reload → continue check
 that must match exactly. Browser checks (`tests/e2e.cjs`, `tests/controls.cjs`) play the first wedding,
 verify two-finger rotation direction, menus not closing on the opening tap, and Arabic screens.
+
+## Version 2.0: ads, purchases and the website
+
+- **Ads (AdMob):** the App ID is in `android/app/src/main/AndroidManifest.xml`, the ad unit IDs are at the top of `android/app/src/main/java/com/assoumstudios/weddinghalltycoon/Monetization.java`. Rewarded videos are always optional; interstitials show at most once every 3 in-game days and never for players who bought Remove Ads. Players in Europe/UK see Google's consent message first.
+- **Purchases (Google Play Billing):** the product list is in `store/play-products.md`. The game side is `web/src/business/monetize.ts` and the store screen is `web/src/ui/storeUI.ts`.
+- **Website (GitHub Pages):** `docs/` holds the landing page, the privacy policy (`docs/privacy.html`) and the browser version of the game (`docs/play/`, for iPhone testers). Refresh the browser version with `npm run build` in `web/` and copy `web/dist/` to `docs/play/`.
+- **Single-file build:** `python3 web/scripts/singlefile.py web/dist out/index.html` packs the whole game into one HTML file.
+- **Balance report:** `SEEDS=40 DAYS=60 npx tsx tests/balance.ts` (in `web/`) plays 40 games per difficulty and prints medians.

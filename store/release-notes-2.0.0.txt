@@ -1,0 +1,6 @@
+<en-US>
+Wedding Hall Tycoon 2.0! New name and logo, a faster first wedding, a Design Studio floor plan, themes that transform your hall, a new angled camera with a show-off view, special requests from couples, Victor competing for your clients, a Portfolio of your weddings, a Premium store, optional reward videos and many fixes.
+</en-US>
+<ar>
+قطب قاعات الأفراح 2.0! اسم وشعار جديدان، عرس أول أسرع، استوديو تصميم بمخطط القاعة، طوابع تغيّر شكل قاعتك، كاميرا مائلة جديدة مع منظر استعراضي، طلبات خاصة من العرسان، فيكتور ينافسك على العملاء، معرض لأعراسك، متجر مميز، فيديوهات مكافآت اختيارية وإصلاحات كثيرة.
+</ar>
