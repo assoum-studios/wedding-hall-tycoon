@@ -87,7 +87,7 @@ function rivalView(app: App): Node[] {
   const wins = rows.filter((r) => r[3]).length;
   const face = (look: any) => h('div', { class: 'avatar', style: { width: '64px', height: '64px' } }, h('img', { src: app.world.renderThumb(look, { face: true, size: 128 }) }));
   return [h('div', { class: 'card hl rival-head' }, h('div', { class: 'row', style: { justifyContent: 'space-around', alignItems: 'center' } },
-      h('div', { style: { textAlign: 'center' } }, face(g.s.owner), h('b', {}, g.hall.name)), h('div', { class: 'big-score', style: { fontSize: '30px' } }, 'VS'), h('div', { style: { textAlign: 'center' } }, face(VICTOR), h('b', {}, t('rival.palace'))))),
+      h('div', { style: { textAlign: 'center' } }, face(g.s.owner), h('b', {}, g.hall.name)), h('div', { class: 'big-score', style: { fontSize: '30px' } }, t('rival.vs')), h('div', { style: { textAlign: 'center' } }, face(VICTOR), h('b', {}, t('rival.palace'))))),
     h('div', { class: 'card' }, ...rows.map(([k, a, b, win]) => h('div', { class: 'list-line' }, h('b', { class: win ? 'money' : '' }, a), h('span', {}, k), h('b', { class: win ? '' : 'neg' }, b)))),
     h('div', { class: 'quote' }, wins >= 4 ? t('rival.ahead') : wins >= 2 ? t('rival.close') : t('rival.behind')),
     h('div', { class: 'sub', style: { textAlign: 'center' } }, t('rival.stolen', { n: v.stolen ?? 0 }))];

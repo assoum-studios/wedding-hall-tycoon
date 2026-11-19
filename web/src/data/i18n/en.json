@@ -703,5 +703,6 @@
  "rival.stolen": "Clients Victor stole from you: {n}. Meet new couples quickly!",
  "phone.portfolio": "Portfolio",
  "portfolio.count": "weddings in your portfolio",
- "portfolio.empty": "Your first wedding will appear here."
+ "portfolio.empty": "Your first wedding will appear here.",
+ "rival.vs": "VS"
 }

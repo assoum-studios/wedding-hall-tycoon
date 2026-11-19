@@ -1,0 +1,10 @@
+{
+  "name": "Wedding Hall Tycoon",
+  "short_name": "Wedding Hall",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#fbd3e0",
+  "theme_color": "#f7d6e0",
+  "icons": [{ "src": "brand/icon-192.png", "sizes": "192x192", "type": "image/png" }, { "src": "brand/apple-touch-icon.png", "sizes": "180x180", "type": "image/png" }]
+}

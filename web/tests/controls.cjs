@@ -16,7 +16,7 @@ const { chromium } = require('playwright');
     const app = window.__app; const rig = app.world.rig; rig.flyTo(rig.goal.target.clone(), 40, 0.9, 0); rig.snap();
     const THREE = window.__app.constructor && null; // not needed
     const P = { x: rig.goal.target.x + 6, y: 0, z: rig.goal.target.z };
-    const proj = () => { const v = app.world.stage.camera.position.clone(); const p = new v.constructor(P.x, P.y, P.z).project(app.world.stage.camera); return { x: (p.x + 1) * 450, y: (1 - p.y) * 300 }; };
+    const proj = () => { app.world.rig.update(0); app.world.stage.camera.updateMatrixWorld(true); const v = app.world.stage.camera.position.clone(); const p = new v.constructor(P.x, P.y, P.z).project(app.world.stage.camera); return { x: (p.x + 1) * 450, y: (1 - p.y) * 300 }; };
     const before = proj(); const c = { x: 450, y: 300 };
     const el = app.world.stage.canvas; const fire = (type, id, x, y) => el.dispatchEvent(new PointerEvent(type, { pointerId: id, clientX: x, clientY: y, bubbles: true, pointerType: 'touch', isPrimary: id === 1 }));
     const R = 120; let a = 0; fire('pointerdown', 1, c.x - R, c.y); fire('pointerdown', 2, c.x + R, c.y);
@@ -24,9 +24,10 @@ const { chromium } = require('playwright');
     fire('pointerup', 1, c.x - R * Math.cos(a), c.y - R * Math.sin(a)); fire('pointerup', 2, c.x + R * Math.cos(a), c.y + R * Math.sin(a));
     rig.snap(); const after = proj();
     const ang = (p) => Math.atan2(p.y - c.y, p.x - c.x); let d = ang(after) - ang(before); if (d > Math.PI) d -= 2 * Math.PI; if (d < -Math.PI) d += 2 * Math.PI;
-    return { d, before, after };
+    return { d, before, after, yaw: rig.yaw, gyaw: rig.goal.yaw, tgt: rig.target.toArray(), interior: rig.interior };
   });
   // Fingers turned clockwise on screen (positive angle with y pointing down); the world point must too.
+  if (process.env.DEBUG) console.log(JSON.stringify(res));
   check(res.d > 0.2, `two-finger twist follows the fingers (world turned ${res.d.toFixed(2)} rad clockwise)`);
 
   if (process.env.ONLY_TWIST) { check(errors.length === 0, 'no page errors' + (errors.length ? ': ' + errors.join(' | ') : '')); await b.close(); process.exit(fails ? 1 : 0); }
@@ -45,7 +46,15 @@ const { chromium } = require('playwright');
   await latin('HUD');
   for (const [btn, name] of [['#btn-bookings', 'bookings'], ['#btn-office', 'office'], ['#btn-goals', 'goals'], ['#btn-phone', 'phone']]) {
     await page.click(btn, { force: true }); await page.waitForTimeout(900); await page.screenshot({ path: `${out}/ar-${name}.png` }); await latin(name);
-    if (name === 'office') for (let i = 2; i <= 7; i++) { await page.click(`.tab:nth-child(${i})`, { force: true }); await page.waitForTimeout(500); await latin('office tab ' + i); }
+    if (name === 'office') {
+      const groups = await page.$$eval('.group-tabs .tab', (els) => els.length);
+      for (let i = 1; i <= groups; i++) {
+        await page.click(`.group-tabs .tab:nth-child(${i})`, { force: true }); await page.waitForTimeout(500); await latin('office group ' + i);
+        const subs = await page.$$eval('.sub-tabs .tab', (els) => els.length);
+        for (let j = 2; j <= subs; j++) { await page.click(`.sub-tabs .tab:nth-child(${j})`, { force: true }); await page.waitForTimeout(500); await latin(`office group ${i} tab ${j}`); }
+      }
+      await page.click('#btn-settings', { force: true }); await page.waitForTimeout(500); await latin('office settings');
+    }
     if (name === 'goals') for (let i = 2; i <= 5; i++) { await page.click(`.tab:nth-child(${i})`, { force: true }); await page.waitForTimeout(400); await latin('goals tab ' + i); }
     await page.evaluate(() => window.__androidBack()); await page.waitForTimeout(400);
   }
