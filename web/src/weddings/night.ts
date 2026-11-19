@@ -1,4 +1,5 @@
 // Planning, the wedding-night simulation (shared by the 3D view and the automated tests) and the report.
+import { SPECIALS, type SpecialDef } from './specials';
 import type { Game } from '../core/game';
 import type { Booking, Plan, WeddingRecord, Phase, Bi } from '../core/types';
 import { CFG, PROBLEMS, PROBLEM_BY_ID, HALLS, CONTENT, DEMAND_BY_ID, STAFF } from '../core/data';
@@ -34,7 +35,9 @@ export interface TableNeed { uid: number; table: number; kind: 'food' | 'drink' 
 export interface Moment { id: MomentId; at: number; window: number; state: 'pending' | 'open' | 'hit' | 'miss'; }
 const MOMENT_AT: [MomentId, Phase, number][] = [['speeches', 'dinner', 0.3], ['cake', 'dinner', 0.8], ['first_dance', 'dancing', 0.05], ['bouquet', 'dancing', 0.6], ['sparkler', 'farewell', 0.45]];
 
+export interface Special { uid: number; def: SpecialDef; at: number; state: 'pending' | 'open' | 'yes' | 'no'; timeLeft: number; }
 export class NightSim {
+  specials: Special[] = []; specialsYes = 0;
   t = 0; duration: number; phase: Phase = 'arrive'; problems: ActiveProblem[] = []; moments: Moment[] = [];
   delta = 0; fixed = 0; missed = 0; fixCosts = 0; momentsHit = 0; needs: TableNeed[] = []; needsServed = 0; needsMissed = 0; tables = 1; private needUid = 1; done = false; skipped = false; photo?: string;
   phaseTimes: { id: Phase; start: number; end: number }[] = [];
@@ -42,13 +45,19 @@ export class NightSim {
   private uidN = 1;
   constructor(public g: Game, public b: Booking, public attended: boolean) {
     this.hallIdx = b.hall;
-    this.duration = CFG.night.lengthSeconds[g.s.settings.weddingLength] ?? 140;
+    // The very first wedding is short so new players reach the fun quickly.
+    this.duration = g.s.history.length === 0 ? CFG.night.lengthSeconds.short : CFG.night.lengthSeconds[g.s.settings.weddingLength] ?? 140;
     let acc = 0; for (const [id, f] of CFG.night.phases) { this.phaseTimes.push({ id, start: acc * this.duration, end: (acc + f) * this.duration }); acc += f; }
     if (!b.plan.planned) {
       const m = managerOf(g, b.hall);
       b.plan = m && m.toggles?.plan ? managerPlan(g, b, effSkill(m)) : defaultPlan(b);
     }
     this.schedule(); this.tables = Math.max(1, Math.ceil(b.req.guests / 10));
+    // Special requests that fit this couple (1, or 2 for big and celebrity weddings).
+    { const pool = SPECIALS.filter((x) => x.who === b.req.personality); const any = SPECIALS.filter((x) => x.who === 'any'); const n = b.req.guests > 300 || b.req.celebrity ? 2 : 1;
+      const picks = [g.rng.pick(pool.length ? pool : any)]; if (n > 1) picks.push(g.rng.pick(any));
+      const din = this.phaseTimes.find((x) => x.id === 'dinner')!, dan = this.phaseTimes.find((x) => x.id === 'dancing')!;
+      picks.forEach((d, i) => { const ph = i === 0 ? din : dan; this.specials.push({ uid: 900 + i, def: d, at: ph.start + (ph.end - ph.start) * (i === 0 ? 0.55 : 0.4), state: 'pending', timeLeft: 16 }); }); }
     for (const [id, ph, f] of MOMENT_AT) { const p = this.phaseTimes.find((x) => x.id === ph)!; this.moments.push({ id, at: p.start + (p.end - p.start) * f, window: CFG.night.miniMomentWindow, state: 'pending' }); }
   }
   get manager() { return managerOf(this.g, this.hallIdx); }
@@ -58,7 +67,8 @@ export class NightSim {
     const g = this.g; const N = CFG.night; const short = shortages(g, this.hallIdx, this.b.req.guests);
     const venue = CFG.venues[this.b.plan.venue] ?? CFG.venues.main;
     const clumsy = staffIn(g, this.hallIdx).filter((e) => e.trait === 'clumsy').length * 0.04 - staffIn(g, this.hallIdx).filter((e) => e.trait === 'reliable').length * 0.03;
-    const expected = (N.problemsPerNight + this.b.req.guests * N.problemsPerExtraGuests) * g.diff.problemMult * g.mod('problemMult') * g.research('problemMult') * (1 + Math.max(-0.3, clumsy)) * (this.b.req.celebrity ? 1.3 : 1);
+    const gu = this.b.req.guests; const sizeBase = gu <= 100 ? 2.6 : gu <= 250 ? 3.4 : gu <= 500 ? 4.4 : 5.4; void N;
+    const expected = sizeBase * g.diff.problemMult * g.mod('problemMult') * g.research('problemMult') * (1 + Math.max(-0.3, clumsy)) * (this.b.req.celebrity ? 1.3 : 1);
     const weights = PROBLEMS.map((p) => {
       if (p.outdoorOnly && !venue.outdoor) return 0;
       if (p.needsPool && !g.hasPlot(this.hallIdx, 'pool_terrace')) return 0;
@@ -96,7 +106,11 @@ export class NightSim {
     const ph = this.phaseAt(this.t); if (ph !== this.phase) { this.phase = ph; this.events.push({ kind: 'phase', data: ph }); }
     const mgr = this.manager; const mgrFixes = !!mgr && (mgr.toggles?.fix ?? true);
     for (const p of this.problems) {
-      if (p.state === 'pending' && this.t >= p.at) { p.state = 'active'; this.events.push({ kind: 'problem', data: p }); }
+      if (p.state === 'pending' && this.t >= p.at) {
+        // Never more than two urgent problems at once: later ones wait a few seconds.
+        if (this.problems.filter((q) => q.state === 'active').length >= 2 && this.t < this.duration - 8) p.at = this.t + 5;
+        else { p.state = 'active'; this.events.push({ kind: 'problem', data: p }); }
+      }
       if (p.state !== 'active') continue;
       p.timeLeft -= dt;
       // The manager walks to the problem and tries to fix it.
@@ -135,8 +149,25 @@ export class NightSim {
         else { m.state = 'miss'; this.events.push({ kind: 'momentMiss', data: m }); }
       }
     }
+    for (const sp of this.specials) {
+      if (sp.state === 'pending' && this.t >= sp.at) { sp.state = 'open'; this.events.push({ kind: 'special', data: sp }); }
+      else if (sp.state === 'open') { sp.timeLeft -= dt; if (sp.timeLeft <= 0) { if (!this.attended && this.manager) this.answerSpecial(sp.uid, true); else this.answerSpecial(sp.uid, false); } }
+    }
     if (this.t >= this.duration) { this.done = true; this.events.push({ kind: 'end' }); }
   }
+  /** The player's choice on a special request. Saying yes costs money (some bring extra income) and pleases the couple. */
+  answerSpecial(uid: number, yes: boolean) {
+    const sp = this.specials.find((x) => x.uid === uid); if (!sp || sp.state !== 'open') return false; const d = sp.def;
+    if (yes && this.g.s.money < d.cost) return false;
+    if (yes) {
+      const hasRole = !d.role || staffIn(this.g, this.hallIdx, d.role).length > 0;
+      if (d.cost) { this.g.addMoney(-d.cost); this.fixCosts += d.cost; }
+      if (d.income) this.extraIncome += d.income;
+      this.delta += hasRole ? d.gain : d.gain * 0.4; sp.state = 'yes'; this.specialsYes++;
+    } else { this.delta -= d.loss; sp.state = 'no'; }
+    this.events.push({ kind: 'specialDone', data: sp }); return true;
+  }
+  extraIncome = 0;
   private resolve(p: ActiveProblem, ok: boolean, byManager: boolean, costOverride?: number) {
     if (!ok) return; const cost = costOverride ?? p.cost;
     if (cost) { this.g.addMoney(-cost); this.fixCosts += cost; }
@@ -206,8 +237,8 @@ export class NightSim {
     const tips = h >= Pr.tipThreshold ? Math.round(b.total * Pr.tipShare * (h - Pr.tipThreshold) / (100 - Pr.tipThreshold)) : 0;
     let shop = 0; for (const id of ['flower_shop', 'cake_shop', 'photo_studio']) if (g.hasPlot(b.hall, id)) shop += Math.round(r.guests * g.rng.range(1.5, 3.5) * hall.plots[id]);
     const foodExtra = Math.round(r.guests * (CFG.menus[r.menu]?.cost ?? 20) * (food.costMult - 1));
-    g.addMoney(payRest + tips + shop, true); g.addMoney(-b.cost - foodExtra);
-    const payment = b.paid + payRest; const costs = b.cost + this.fixCosts + foodExtra; let profit = payment + tips + shop - costs;
+    g.addMoney(payRest + tips + shop + this.extraIncome, true); g.addMoney(-b.cost - foodExtra);
+    const payment = b.paid + payRest; const costs = b.cost + this.fixCosts + foodExtra; let profit = payment + tips + shop + this.extraIncome - costs;
     // An investor takes a share of each wedding's profit while the deal lasts.
     const inv = g.s.investor; if (inv && inv.until >= g.s.day && profit > 0) { const cut = Math.round(profit * inv.share); g.addMoney(-cut); profit -= cut; }
 
@@ -259,6 +290,7 @@ export function runHeadless(g: Game, b: Booking, opts: { attended: boolean; fixR
       for (const p of sim.problems) if (p.state === 'active' && !p.manager && p.total - p.timeLeft > 2 && g.rng.chance((opts.fixRate ?? 0.85) * 0.25)) sim.fix(p.uid);
       for (const m of sim.moments) if (m.state === 'open' && g.rng.chance((opts.momentRate ?? 0.8) * 0.25)) sim.tapMoment(m.id, g.rng.range(0.4, 1));
       for (const n of sim.needs) if (g.rng.chance(0.15)) sim.serve(n.uid);
+      for (const sp of sim.specials) if (sp.state === 'open' && g.rng.chance(0.3)) sim.answerSpecial(sp.uid, g.rng.chance(0.75));
     }
   }
   return sim.finish();

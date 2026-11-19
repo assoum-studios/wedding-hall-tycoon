@@ -28,7 +28,7 @@ export function showTitle(app: App) {
     div('slots', ...slots.map((sl) => h('div', { class: 'panel slot' },
       h('div', { class: 'num' }, String(sl.slot + 1)),
       h('div', { class: 'grow' }, sl.exists ? [h('div', { class: 'title' }, sl.hallName ?? ''), h('div', { class: 'sub' }, t('title.slotInfo', { d: (sl.day ?? 0) + 1, c: sl.chapter ?? 1, m: money(sl.money ?? 0), diff: L(CFG.difficulties[sl.difficulty!]) }))] : h('div', { class: 'title' }, t('title.empty'))),
-      sl.exists ? btn([ic('play'), t('title.continue')], () => { initAudio(); const s = load(sl.slot); if (s) { setScreen(null); app.startNew(sl.slot, s, false); } }, 'green small', { id: 'slot-continue-' + sl.slot }) : btn(t('title.new'), () => { initAudio(); pickDifficulty(app, sl.slot); }, 'small', { id: 'slot-new-' + sl.slot }),
+      sl.exists ? btn([ic('play'), t('title.continue')], () => { initAudio(); const s = load(sl.slot); if (s) { setScreen(null); app.startNew(sl.slot, s, false); } }, 'green small', { id: 'slot-continue-' + sl.slot }) : btn(t('title.new'), () => { initAudio(); story(app, sl.slot, 'normal', 0); }, 'small', { id: 'slot-new-' + sl.slot }),
       sl.exists ? btn('✕', () => confirmBox(t('title.deleteConfirm'), t('title.delete'), () => { remove(sl.slot); showTitle(app); }), 'red small', { 'aria-label': t('title.delete') }) : null))),
     h('div', { class: 'row' }, langBtn), h('div', { class: 'sub', style: { color: '#fff', textShadow: '0 1px 2px #000' } }, t('title.publisher')));
   setScreen(el); playMusic('day');
@@ -66,6 +66,7 @@ function story(app: App, slot: number, diff: Difficulty, page: number) {
 
 /** Owner customization: built to match the reference screen. */
 export function customize(app: App, slot: number, diff: Difficulty) {
+  void pickDifficulty;
   const w = app.world; let male = defaultOwner('m'); let female = defaultOwner('f'); let gender: 'm' | 'f' = 'm';
   let people = w.setupCustomization(male, female);
   const cur = () => (gender === 'm' ? male : female);
@@ -110,6 +111,11 @@ export function customize(app: App, slot: number, diff: Difficulty) {
     s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = app.g.s.settings.quality;
     app.startNew(slot, s, true);
   }, 'green', { id: 'btn-start-empire' }));
+  // Difficulty is a small chip here (Normal by default) instead of a screen before the story.
+  const order: Difficulty[] = ['relaxed', 'normal', 'hard', 'legend'];
+  const diffChip = h('button', { class: 'diff-chip', id: 'diff-chip' }, '⚙ ' + t('custom.difficulty') + ': ' + L(CFG.difficulties[diff]));
+  diffChip.addEventListener('click', () => { diff = order[(order.indexOf(diff) + 1) % order.length]; diffChip.textContent = '⚙ ' + t('custom.difficulty') + ': ' + L(CFG.difficulties[diff]); });
+  startBtn.prepend(diffChip);
   const el = div('custom', h('div', { class: 'logo-small', html: logoSVG(undefined, true) }), first.np, first.nt, startBtn);
   setScreen(el);
 }

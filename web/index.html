@@ -20,18 +20,20 @@
     <div style="width:min(300px,70vw);height:12px;border-radius:6px;background:rgba(120,40,90,.15);overflow:hidden"><i id="boot-bar" style="display:block;height:100%;width:8%;background:linear-gradient(#fff2b0,#e2b84f);border-radius:6px;transition:width .4s"></i></div>
     <div id="boot-tip" style="max-width:420px;line-height:1.45;opacity:.95"></div>
   </div>
-  <!-- Soft studio intro: Assoum Studios fades in and out, then the game logo (on the loading screen) -->
-  <div id="intro" style="position:fixed;inset:0;z-index:300;background:#ffffff;display:flex;align-items:center;justify-content:center;transition:opacity .9s ease">
-    <img src="brand/assoum-studios.webp" alt="Assoum Studios" style="width:min(300px,62vw);opacity:0;transform:scale(.94);transition:opacity 1s ease,transform 2.4s ease" />
-  </div>
+  <!-- Soft studio intro: Assoum Studios fades in and out (pure CSS so it stays smooth while the game loads), then the game logo on the loading screen -->
+  <style>
+    #intro { position: fixed; inset: 0; z-index: 300; background: #ffffff; display: flex; align-items: center; justify-content: center; pointer-events: none; animation: introOut .8s ease 2.6s forwards; }
+    #intro img { width: min(300px, 62vw); opacity: 0; animation: introLogo 2.5s ease .2s forwards; }
+    @keyframes introLogo { 0% { opacity: 0; transform: scale(.94); } 30% { opacity: 1; } 75% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(1.01); } }
+    @keyframes introOut { to { opacity: 0; visibility: hidden; } }
+    #boot img { animation: bootLogo .9s ease 2.7s both; }
+    @keyframes bootLogo { from { opacity: 0; transform: scale(.92); } to { opacity: 1; transform: none; } }
+  </style>
+  <div id="intro"><img src="brand/assoum-studios.webp" alt="Assoum Studios" /></div>
   <script>
     (function () {
-      var intro = document.getElementById('intro'); var img = intro.querySelector('img');
-      var fast = location.search.indexOf('fast') >= 0;
-      if (fast) { intro.remove(); return; }
-      requestAnimationFrame(function () { setTimeout(function () { img.style.opacity = '1'; img.style.transform = 'scale(1)'; }, 150); });
-      setTimeout(function () { img.style.opacity = '0'; }, 1900);
-      setTimeout(function () { intro.style.opacity = '0'; }, 2600);
+      var intro = document.getElementById('intro');
+      if (location.search.indexOf('fast') >= 0) { intro.remove(); return; }
       setTimeout(function () { intro.remove(); }, 3500);
     })();
   </script>

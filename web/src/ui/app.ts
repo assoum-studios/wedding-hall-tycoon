@@ -25,9 +25,11 @@ import { showNews } from './news';
 import { Tutorial } from './tutorial';
 import { showHowTo } from './howto';
 import { initMonetize, bindGame, setPremiumDecorList, isNative, showRewarded, maybeInterstitial } from '../business/monetize';
-import { maybeStarterOffer } from './storeUI';
+import { maybeStarterOffer, openStore } from './storeUI';
+import { planning } from './bookings';
 import { BIZ } from '../core/data';
 import { openBuild } from './buildUI';
+import { openStudio } from './studio';
 
 export class App {
   g: Game; world: World; hud = h('div', { class: 'hud-root' }); overlay = div('overlay-layer'); nightUI: HTMLElement | null = null; tutorial: Tutorial | null = null;
@@ -58,7 +60,8 @@ export class App {
     this.applySettings(); this.bindGame();
     this.world.loadHall(); this.world.setupDay(); this.world.viewHall(true);
     this.tutorial = new Tutorial(this);
-    if (!this.g.s.tutorial.done) { if (fresh && !this.quick) showHowTo(() => this.tutorial?.start()); else this.tutorial.start(); }
+    if (!this.g.s.tutorial.done) this.tutorial.start();
+    void showHowTo;
     const login = checkLogin(this.g); if (login) setTimeout(() => toast(t('gift.streak', { n: login.streak, m: money(login.reward) }), 'good'), 1200);
     this.refresh(); this.persist(); playMusic('day');
     if (this.g.s.pendingNews && this.g.s.tutorial.done) setTimeout(() => showNews(this), 600);
@@ -109,6 +112,8 @@ export class App {
       h('div', { class: 'stat hide-sm' }, h('span', { class: 'ico fol' }, ic('heart')), num(s.followers)),
       h('div', { class: 'stat date-stat' }, h('span', { class: 'ico day' }, ic('cal')), t('hud.dateShort', { d: d.dom, m: monthName })),
       h('div', { class: 'hud-right' },
+        isNative() ? btn('💎', () => openStore(this), 'icon-btn gold', { 'aria-label': t('store.title'), id: 'btn-store' }) : null,
+        btn(this.world.presentation ? '🗺️' : '🎥', () => { this.world.togglePresentation(); this.renderHud(); }, 'icon-btn', { 'aria-label': t('hud.view'), id: 'btn-view' }),
         btn([ic('phone'), unreadCount(g) ? h('span', { class: 'badge' }, String(unreadCount(g))) : null], () => openPhone(this), 'icon-btn', { 'aria-label': t('phone.title'), id: 'btn-phone' })));
     const wed = weddingToday(g); const claim = claimableCount(g);
     const mainLabel = wed ? t('dock.startWedding') : t('dock.nextDay');
@@ -116,10 +121,19 @@ export class App {
       this.dockBtn('book', t('dock.bookings'), () => openBookings(this), s.requests.filter((r) => r.hall === s.activeHall).length, 'btn-bookings'),
       g.unlocked('office') ? this.dockBtn('office', t('dock.office'), () => openOffice(this), 0, 'btn-office') : null,
       g.unlocked('goals') ? this.dockBtn('trophy', t('dock.goals'), () => openGoals(this), claim, 'btn-goals') : null,
-      g.unlocked('build') ? this.dockBtn('hammer', t('dock.build'), () => openBuild(this), 0, 'btn-build') : null,
+      g.unlocked('build') ? this.dockBtn('hammer', t('dock.build'), () => openStudio(this), 0, 'btn-build') : null,
       h('div', { class: 'main-action' }, btn([ic(wed ? 'play' : 'next'), mainLabel], () => this.mainAction(), (wed ? 'green' : 'gold') + ' big', { id: 'btn-main' })));
-    this.hud.replaceChildren(top, dock);
+    this.hud.replaceChildren(top, this.upNext() ?? '', dock);
     this.tutorial?.decorate();
+  }
+  /** The next wedding at a glance: who, how many guests, when, and what still needs doing. */
+  private upNext(): HTMLElement | null {
+    const g = this.g; const s = g.s; if (!g.s.tutorial.done && s.tutorial.step < 3) return null;
+    const b = s.bookings.filter((x) => x.hall === s.activeHall && x.date >= s.day).sort((x, y) => x.date - y.date)[0]; if (!b) return null;
+    const days = b.date - s.day; const when = days === 0 ? t('upnext.today') : days === 1 ? t('upnext.tomorrow') : t('upnext.inDays', { n: days });
+    const todo = days === 0 ? t('upnext.start') : b.plan.planned ? '✓ ' + t('upnext.planned') : '✏️ ' + t('upnext.plan');
+    return h('div', { class: 'up-next', id: 'up-next', onClick: () => { if (days === 0) this.mainAction(); else planning(this, b, () => this.refresh()); } },
+      h('div', { class: 'un-ico' }, '💍'), h('div', {}, h('div', { class: 'un-k' }, t('upnext.title') + ' · ' + when), h('div', { class: 'un-t' }, L(b.req.groom) + ' & ' + L(b.req.bride)), h('div', { class: 'un-s' }, t('upnext.guests', { n: b.req.guests }) + ' · ' + todo)));
   }
   dockBtn(icon: any, label: string, onClick: () => void, badge = 0, id = '') { return h('button', { class: 'dock-btn', onClick, id }, ic(icon), label, badge ? h('span', { class: 'badge' }, String(badge)) : null); }
 
@@ -243,6 +257,15 @@ export class App {
         uiRoot().append(n.moment); sfx('alert'); break;
       }
       case 'momentMiss': n.moment?.remove(); n.moment = null; break;
+      case 'special': {
+        // A special request from the couple or a guest: two choices.
+        const sp = ev.data; const d = sp.def; (n as any).special?.remove();
+        const yes = btn(L(d.yes) + (d.cost ? ' · ' + money(d.cost) : '') + (d.income ? ' (+' + money(d.income) + ')' : ''), () => { if (sim.answerSpecial(sp.uid, true)) { sfx('success'); haptic(15); toast('💖 ' + t('special.yes'), 'good'); this.world.night?.momentFx(); } else toast(t('night.cantAfford'), 'bad'); }, 'small green', { id: 'special-yes' });
+        const no = btn(L(d.no), () => { if (sim.answerSpecial(sp.uid, false)) sfx('tap'); }, 'small ghost', { id: 'special-no' });
+        const card = h('div', { class: 'special-card' }, h('div', { class: 'sc-k' }, '✨ ' + t('special.title')), h('div', { class: 'sc-t' }, L(d.text)), h('div', { class: 'row wrap', style: { justifyContent: 'center', gap: '6px' } }, yes, no));
+        (n as any).special = card; this.overlay.append(card); sfx('ring'); break;
+      }
+      case 'specialDone': (n as any).special?.remove(); (n as any).special = null; break;
       case 'missed': toast(t('night.missed', { p: L(PROBLEM_BY_ID[ev.data.id]) }), 'bad'); break;
       case 'fixed': if (ev.data.byManager) toast(t('night.managerFixed', { p: L(PROBLEM_BY_ID[ev.data.p.id]) }), 'good'); break;
       case 'managerFail': toast(t('night.managerFailed'), 'bad'); break;
@@ -250,7 +273,7 @@ export class App {
   }
   skipNight() { const n = this.night; if (!n) return; n.sim.skip(); }
   endNight() {
-    const n = this.night!; n.ended = true; n.moment?.remove(); for (const el of n.bubbles.values()) el.remove(); this.clearTableFaces();
+    const n = this.night!; n.ended = true; n.moment?.remove(); (n as any).special?.remove(); for (const el of n.bubbles.values()) el.remove(); this.clearTableFaces();
     const rec = n.sim.finish(); if (n.sim.photo) addPhoto(this.g, rec, n.sim.photo);
     if (rec.happiness >= CFG.happiness.perfect) { confetti(true); this.world.night?.celebrate(); sfx('success'); }
     setTimeout(() => this.showReport(rec), rec.happiness >= CFG.happiness.perfect ? 2200 : 400);

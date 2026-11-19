@@ -91,8 +91,8 @@ export class Stage {
   /** 0 = bright day, 0.5 = sunset, 1 = night. */
   setDayTime(t: number) {
     this.dayT = t;
-    const day = { top: new THREE.Color('#2f78cc'), bottom: new THREE.Color('#a8cbea') };
-    const dusk = { top: new THREE.Color('#5a4a9a'), bottom: new THREE.Color('#ffb27a') };
+    const day = { top: new THREE.Color('#5aa8ec'), bottom: new THREE.Color('#ffe2ec') };
+    const dusk = { top: new THREE.Color('#7a5ab0'), bottom: new THREE.Color('#ffb3a0') };
     const night = { top: new THREE.Color('#0a1030'), bottom: new THREE.Color('#2a2f5a') };
     const lerp3 = (a: THREE.Color, b: THREE.Color, c: THREE.Color) => t < 0.5 ? a.clone().lerp(b, t * 2) : b.clone().lerp(c, (t - 0.5) * 2);
     this.skyU.top.value.copy(lerp3(day.top, dusk.top, night.top)); this.skyU.bottom.value.copy(lerp3(day.bottom, dusk.bottom, night.bottom));

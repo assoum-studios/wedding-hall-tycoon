@@ -15,8 +15,8 @@ export function openGoals(app: App, tab = 'chapter') {
   const render = () => {
     const wk = g.s.weekly.goals.filter((w) => weeklyReady(g, w)).length; const ach = ACHIEVEMENTS.filter((a) => achReady(g, a)).length;
     m.panel.querySelector('.tabs')?.remove();
-    m.panel.insertBefore(tabs([{ id: 'chapter', label: t('goals.story'), badge: chapterReady(g) ? 1 : 0 }, { id: 'weekly', label: t('goals.weekly'), badge: wk }, { id: 'ach', label: t('goals.achievements'), badge: ach }, { id: 'events', label: t('goals.events'), badge: canSpin(g) ? 1 : 0 }, { id: 'board', label: t('goals.leaderboards') }], cur, (id) => { cur = id; render(); }), m.body);
-    m.setBody(cur === 'chapter' ? chapterView(app, render) : cur === 'weekly' ? weeklyView(app, render) : cur === 'ach' ? achView(app, render) : cur === 'events' ? eventsView(app, render) : boardView(app));
+    m.panel.insertBefore(tabs([{ id: 'chapter', label: t('goals.story'), badge: chapterReady(g) ? 1 : 0 }, { id: 'weekly', label: t('goals.weekly'), badge: wk }, { id: 'ach', label: t('goals.achievements'), badge: ach }, { id: 'events', label: t('goals.events'), badge: canSpin(g) ? 1 : 0 }, { id: 'rival', label: '⚔ ' + t('goals.rival') }, { id: 'board', label: t('goals.leaderboards') }], cur, (id) => { cur = id; render(); }), m.body);
+    m.setBody(cur === 'chapter' ? chapterView(app, render) : cur === 'weekly' ? weeklyView(app, render) : cur === 'ach' ? achView(app, render) : cur === 'events' ? eventsView(app, render) : cur === 'rival' ? rivalView(app) : boardView(app));
   };
   const oc = m.close; m.close = () => { oc(); app.refresh(); };
   render(); app.tutorial?.event('goals');
@@ -72,4 +72,23 @@ function boardView(app: App) {
     return h('div', { class: 'card' }, h('div', { class: 'title' }, title), ...rows.map((r, i) => h('div', { class: 'list-line', style: r.me ? { background: '#fff3c4', borderRadius: '8px', padding: '6px' } : {} }, h('span', {}, (i + 1) + '. ' + r.name), h('b', {}, fmt(r.v)))));
   };
   return [h('div', { class: 'sub', style: { marginBottom: '8px' } }, t('board.offline')), div('grid2', table(t('board.best'), 'best', (n) => n + '%'), table(t('board.size'), 'size', (n) => num(n)), table(t('board.followers'), 'followers', (n) => num(n)))];
+}
+
+/** Your hall against Victor Crane's Grand Palace, side by side. */
+function rivalView(app: App): Node[] {
+  const g = app.g; const v = g.s.victor; const mine = g.rating();
+  const myWeds = g.s.history.length; const rows: [string, string, string, boolean][] = [
+    [t('rival.rating'), mine.toFixed(0), v.rating.toFixed(0), mine >= v.rating],
+    [t('rival.weddings'), String(myWeds), String(v.weddings ?? 0), myWeds >= (v.weddings ?? 0)],
+    [t('rival.followers'), String(g.s.followers), String(v.followers ?? 900), g.s.followers >= (v.followers ?? 900)],
+    [t('rival.happiness'), (g.s.history.slice(-10).reduce((a, r) => a + r.happiness, 0) / Math.max(1, Math.min(10, g.s.history.length))).toFixed(0) + '%', Math.round(v.rating * 0.95) + '%', true],
+    [t('rival.halls'), String(g.s.halls.filter((x) => x.owned).length), String(1 + Math.floor((v.upgrades ?? 0) / 4)), g.s.halls.filter((x) => x.owned).length >= 1 + Math.floor((v.upgrades ?? 0) / 4)],
+  ];
+  const wins = rows.filter((r) => r[3]).length;
+  const face = (look: any) => h('div', { class: 'avatar', style: { width: '64px', height: '64px' } }, h('img', { src: app.world.renderThumb(look, { face: true, size: 128 }) }));
+  return [h('div', { class: 'card hl rival-head' }, h('div', { class: 'row', style: { justifyContent: 'space-around', alignItems: 'center' } },
+      h('div', { style: { textAlign: 'center' } }, face(g.s.owner), h('b', {}, g.hall.name)), h('div', { class: 'big-score', style: { fontSize: '30px' } }, 'VS'), h('div', { style: { textAlign: 'center' } }, face(VICTOR), h('b', {}, t('rival.palace'))))),
+    h('div', { class: 'card' }, ...rows.map(([k, a, b, win]) => h('div', { class: 'list-line' }, h('b', { class: win ? 'money' : '' }, a), h('span', {}, k), h('b', { class: win ? '' : 'neg' }, b)))),
+    h('div', { class: 'quote' }, wins >= 4 ? t('rival.ahead') : wins >= 2 ? t('rival.close') : t('rival.behind')),
+    h('div', { class: 'sub', style: { textAlign: 'center' } }, t('rival.stolen', { n: v.stolen ?? 0 }))];
 }

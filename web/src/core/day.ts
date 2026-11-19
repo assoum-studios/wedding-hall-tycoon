@@ -28,7 +28,7 @@ export function startGame(g: Game) {
   s.staff[0].look.hair = 0; s.staff[1].look.beard = 2;
   refreshCandidates(g);
   // The tutorial couple and one more request.
-  const r = genRequest(g, 0, {}); r.personality = 'easygoing'; r.guests = 80; r.date = 2; r.expires = 3; r.theme = 'boho'; r.demands = r.demands.slice(0, 3);
+  const r = genRequest(g, 0, {}); r.personality = 'easygoing'; r.guests = 80; r.date = 1; r.expires = 3; r.theme = 'boho'; r.demands = r.demands.slice(0, 3);
   r.budget = Math.round(r.budget * 1.35); s.requests.push(r); // the tutorial couple is forgiving on price
   s.requests.push(genRequest(g, 0, {}));
   ensureWeekly(g);
@@ -122,5 +122,19 @@ function victorDrift(g: Game) {
   const v = g.s.victor; const target = Math.min(CFG.victor.maxRating, (CFG.victor.base + g.s.chapter * CFG.victor.growthPerChapter) * g.diff.victorStrength * g.mod('victorMult'));
   v.rating += (target - v.rating) * 0.05 + g.rng.range(-0.4, 0.4);
   v.rating = Math.max(50, Math.min(97, v.rating));
+  // Victor runs a real business next door: he hosts weddings, grows his followers and upgrades his palace.
+  v.weddings = (v.weddings ?? 0) + (g.rng.chance(0.55 + g.s.chapter * 0.03) ? 1 : 0);
+  v.followers = Math.round((v.followers ?? 900) * (1 + 0.004 * g.diff.victorStrength) + g.rng.int(5, 40));
+  if (g.s.tutorial.done && g.s.day % 15 === 7) {
+    v.upgrades = (v.upgrades ?? 0) + 1;
+    g.message(['Victor Crane', 'فيكتور كرين'], [`The Grand Palace just finished renovation #${v.upgrades}. Try to keep up.`, `أنهى القصر الكبير للتو التجديد رقم ${v.upgrades}. حاول أن تلحق بنا.`], 'victor');
+  }
+  // When his rating beats yours he sometimes steals a client who hasn't met you yet.
+  const mine = g.rating(); const open = g.s.requests.filter((r) => r.status === 'new' && !r.met && !r.vip);
+  if (g.s.tutorial.done && g.s.chapter >= 2 && open.length > 1 && v.rating > mine - 3 && g.rng.chance(0.12 * g.diff.victorStrength * (v.rating > mine ? 1.4 : 1))) {
+    const r = g.rng.pick(open); g.s.requests = g.s.requests.filter((x) => x !== r); v.stolen = (v.stolen ?? 0) + 1;
+    g.message(['Victor Crane', 'فيكتور كرين'], [`${r.groom[0]} & ${r.bride[0]} just booked the Grand Palace. I offered them a better price. Too slow!`, `${r.groom[1]} و${r.bride[1]} حجزا للتو في القصر الكبير. عرضت عليهما سعراً أفضل. أنت بطيء جداً!`], 'victor');
+    g.emit('requests');
+  }
 }
 export { PROG };

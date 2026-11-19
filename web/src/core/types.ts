@@ -98,7 +98,7 @@ export interface GameState {
   chapter: number; chapterStartDay: number; chapterStats: Stats; chapterStars: number[]; chapterDone: boolean;
   weekly: { week: number; goals: WeeklyGoal[] };
   achievements: { claimed: string[] };
-  research: Research; victor: { rating: number; offerMade: boolean; flowersSent: boolean };
+  research: Research; victor: { rating: number; offerMade: boolean; flowersSent: boolean; weddings?: number; followers?: number; stolen?: number; upgrades?: number };
   sabotageSurvived: number; sabotageScheduled: number[];
   stats: Stats; weekStats: Stats;
   dailyGift: { lastDate: string; streak: number; spunDate: string };

@@ -24,7 +24,7 @@ export function openPhone(app: App, appId: string | null = null) {
       scr.append(div('apphead', h('span', { class: 'grow' }, t('phone.title')), btn('✕', close, 'small red')), div('apps',
         appBtn('vowly', 'heart', 'linear-gradient(135deg,#ff5d8f,#ffb347)', t('phone.vowly')), appBtn('messages', 'msg', 'linear-gradient(#6ddc56,#36b44a)', t('phone.messages'), unreadCount(g)),
         appBtn('calls', 'call', 'linear-gradient(#5b8ff0,#1f4fb8)', t('phone.calls'), g.s.pendingCalls.length), appBtn('gallery', 'camera', 'linear-gradient(#ffd27a,#e2a13a)', t('phone.gallery')),
-        appBtn('bank', 'bank', 'linear-gradient(#9aa3b0,#4b5563)', t('phone.bank')), appBtn('reviews', 'star', 'linear-gradient(#ffd27a,#e0384f)', t('phone.reviews'))));
+        appBtn('bank', 'bank', 'linear-gradient(#9aa3b0,#4b5563)', t('phone.bank')), appBtn('reviews', 'star', 'linear-gradient(#ffd27a,#e0384f)', t('phone.reviews')), appBtn('portfolio', 'book', 'linear-gradient(#f7b6d2,#b44a86)', t('phone.portfolio'))));
       return;
     }
     if (cur === 'vowly') {
@@ -49,6 +49,18 @@ export function openPhone(app: App, appId: string | null = null) {
     }
     if (cur === 'gallery') {
       scr.append(head(t('phone.gallery')), div('appbody', ...(g.s.photos.length ? [div('grid3', ...[...g.s.photos].reverse().map((p) => h('div', { class: 'card', style: { padding: '4px' } }, h('img', { src: p.data, style: { width: '100%', borderRadius: '8px' } }), h('div', { class: 'sub' }, L(p.names[0]) + ' & ' + L(p.names[1])))))] : [h('div', { class: 'empty' }, t('phone.noPhotos'))])));
+    }
+    if (cur === 'portfolio') {
+      // Every wedding you hosted: photo, theme, guests, happiness, profit and the couple's review. Best one on top.
+      const hist = [...g.s.history].filter((r) => !r.skipped || r.photo).reverse(); const best = [...g.s.history].sort((a, b) => b.happiness - a.happiness)[0];
+      const card = (r: any, hl = false) => h('div', { class: 'card portfolio-card' + (hl ? ' hl' : '') },
+        r.photo ? h('img', { src: r.photo, style: { width: '100%', borderRadius: '10px', display: 'block', marginBottom: '6px' } }) : h('div', { style: { height: '54px', borderRadius: '10px', marginBottom: '6px', background: 'linear-gradient(90deg,' + (CFG.themes[r.theme]?.colors ?? ['#eee', '#ddd']).slice(0, 2).join(',') + ')' } }),
+        h('div', { class: 'row' }, h('b', { class: 'grow' }, (hl ? '🏆 ' : '') + L(r.names[0]) + ' & ' + L(r.names[1])), stars(r.stars)),
+        h('div', { class: 'sub' }, [L(CFG.themes[r.theme] ?? ['', '']), t('upnext.guests', { n: r.guests }), r.happiness + '%', money(r.profit)].join(' · ')),
+        h('div', { class: 'quote', style: { margin: '4px 0 0', fontSize: '13px' } }, '“' + L(r.review) + '”'));
+      scr.append(head(t('phone.portfolio')), div('appbody', h('div', { class: 'card', style: { textAlign: 'center' } }, h('div', { class: 'big-score', style: { fontSize: '34px' } }, String(g.s.history.length)), h('div', { class: 'sub' }, t('portfolio.count'))),
+        best ? card(best, true) : null, ...(hist.length ? hist.slice(0, 40).map((r) => card(r)) : [h('div', { class: 'empty' }, t('portfolio.empty'))])));
+      return;
     }
     if (cur === 'reviews') {
       const hist = [...g.s.history].reverse(); const avg = hist.length ? hist.reduce((a, r) => a + r.stars, 0) / hist.length : 0;

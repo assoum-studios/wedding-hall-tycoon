@@ -37,7 +37,7 @@ export class World {
     this.rig = new CameraRig(this.stage.camera, canvas);
     this.view = new HallView(g, this.stage.scene); this.stage.scene.add(this.extra);
     this.rig.onTap = (x, y) => this.tap(x, y);
-    this.rig.onUserMove = () => { this.autoCam = false; };
+    this.rig.onUserMove = () => { this.autoCam = false; this.lastUserMove = performance.now(); };
     this.stage.updaters.add((dt, t) => this.update(dt, t));
   }
   get hallIdx() { return this.g.s.activeHall; }
@@ -117,7 +117,14 @@ export class World {
   cinema(secs = 5) { document.body.classList.add('cinema'); clearTimeout((this as any)._cin); (this as any)._cin = setTimeout(() => document.body.classList.remove('cinema'), secs * 1000); }
 
   // ---------------- Camera presets ----------------
-  viewHall(snap = false) { const { d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 0, d * 0.1), Math.max(26, d * 1.35), 0.95, 0); if (snap) this.rig.snap(); }
+  /** Management view: an angled 3/4 look into the hall (walls facing the camera fade away). */
+  viewHall(snap = false) { this.presentation = false; const { d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 0, d * 0.08), Math.max(28, d * 1.4), 0.82, 0.5); if (snap) this.rig.snap(); }
+  /** Presentation view: lower and closer, slowly circling the hall to show it off. */
+  presentation = false; private lastUserMove = 0;
+  togglePresentation() {
+    if (this.presentation) { this.viewHall(); return; }
+    this.presentation = true; const { d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 1.2, 0), Math.max(16, d * 0.85), 0.36, this.rig.yaw);
+  }
   viewNeighborhood() { this.rig.flyTo(new THREE.Vector3(0, 0, 0), 190, 1.05, 0.3); }
   viewEntrance(snap = false) { const { d } = hallDims(this.g.hall.size); this.rig.flyTo(new THREE.Vector3(0, 2, d / 2 + 14), 16, 0.18, 0); if (snap) this.rig.snap(); }
 
@@ -162,6 +169,7 @@ export class World {
       const dT = 0.08 + wet + 0.5 * (0.5 - 0.5 * Math.cos(k * Math.PI * 2));
       if (Math.abs(dT - this.stage.dayT) > 0.003) { this.stage.setDayTime(dT); this.view.setMood(Math.max(0, (dT - 0.38) / 0.62), 0); }
     }
+    if (this.presentation && this.mode === 'day' && performance.now() - this.lastUserMove > 6000) this.rig.goal.yaw += dt * 0.06;
     if (this.weather) { this.weather.obj.visible = this.mode === 'day'; if (this.weather.obj.visible) this.weather.update(dt, t, this.rig.target); }
     if (this.marker?.visible) { const m = this.marker.material as THREE.MeshBasicMaterial; m.opacity = 0.6 + Math.sin(t * 6) * 0.4; }
   }

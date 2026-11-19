@@ -1,5 +1,6 @@
 // Builds a hall (palace exterior + detailed interior with cut-away walls) and its neighborhood.
 import * as THREE from 'three';
+import { buildThemeDecor } from './themeDecor';
 import { currentCar } from '../progress/wardrobe';
 import type { Game } from '../core/game';
 import type { HallState, PlacedItem, Plan } from '../core/types';
@@ -358,7 +359,15 @@ export class HallView {
     for (const l of this.lights) l.color.set(lc);
     if (this.dance) (this.dance.material as THREE.ShaderMaterial).uniforms.tint.value.set(plan?.light === 'led' ? '#a070ff' : th ? th.colors[0] : '#a070ff');
     this.applyCosmetics(plan);
+    // Theme decor: centerpieces, wall decor, string lights and an arch that change with the wedding's style.
+    this.themeDecor?.removeFromParent(); this.themeDecor = null;
+    if (plan && this.hallIdx >= 0) {
+      const h = this.g.s.halls[this.hallIdx]; const { w, d } = hallDims(h.size);
+      const tables = h.layout.filter((it) => it.id === 'round_table' || it.id === 'long_table').map((it) => itemCenter(h, it));
+      this.themeDecor = buildThemeDecor(plan.theme, tables, w, d, WALL_H); this.interior.add(this.themeDecor);
+    }
   }
+  themeDecor: THREE.Group | null = null;
   applyCosmetics(plan?: Plan | null) {
     const i = this.hallIdx; if (i < 0) return;
     const wall = cosmeticColor(this.g, i, 'wall'); MAT.wallTint.color.set(wall ?? HALLS.halls[i].palette.wall); MAT.wallpaper.color.set(wall ?? '#ffffff');

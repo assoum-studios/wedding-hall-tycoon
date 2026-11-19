@@ -509,8 +509,8 @@
  "upkeep": {
   "baseDaily": 180,
   "perUpgradeLevel": 14,
-  "perSizeLevel": 90,
-  "perPlotLevel": 22
+  "perSizeLevel": 115,
+  "perPlotLevel": 28
  },
  "victor": {
   "ratingDriftPerDay": 0.05,

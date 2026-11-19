@@ -13,17 +13,15 @@ const path = require('path');
   const click = async (sel, t = 8000) => { await page.waitForSelector(sel, { timeout: t }); await page.click(sel, { force: true }); await page.waitForTimeout(350); };
   await page.addInitScript((l) => { if (sessionStorage.getItem('e2e_init')) return; sessionStorage.setItem('e2e_init', '1'); localStorage.clear(); localStorage.setItem('whot_lang', l); localStorage.setItem('whot_quality', 'smooth'); }, lang);
   await page.goto(url); await page.waitForTimeout(5000); await shot('01-title');
-  await click('#slot-new-0'); await shot('02-difficulty');
-  await click('#diff-normal'); await page.waitForTimeout(1500); await shot('03-story1');
+  await click('#slot-new-0'); await shot('02-story-start');
+  await page.waitForTimeout(1500); await shot('03-story1');
   for (let i = 0; i < 3; i++) { await click('#story-next'); await page.waitForTimeout(1200); if (i === 1) await shot('04-story-letter'); }
   await click('#story-next'); await page.waitForTimeout(4000); await shot('05-customize');
   // pick the female owner and a different outfit to exercise the panel
   const opts = await page.$$('.custom-panel .opt'); if (opts.length > 1) { await opts[1].click(); await page.waitForTimeout(1500); }
   await shot('06-customize-female');
   if (opts.length) { await (await page.$$('.custom-panel .opt'))[0].click(); await page.waitForTimeout(1200); }
-  await click('#btn-start-empire'); await page.waitForSelector('#howto-next', { timeout: 30000 }); await page.waitForTimeout(800); await shot('07-howto');
-  for (let i = 0; i < 6; i++) { const n = await page.$('#howto-next'); if (!n) break; await n.click({ force: true }); await page.waitForTimeout(300); }
-  await click('#howto-start'); await page.waitForTimeout(2500); await shot('07-day');
+  await click('#btn-start-empire'); await page.waitForTimeout(4000); await shot('07-day');
   // Bookings -> meet the tutorial couple
   await click('#btn-bookings'); await page.waitForTimeout(600); await shot('08-bookings');
   await click('[data-req]'); await page.waitForTimeout(2500); await shot('09-meeting');
