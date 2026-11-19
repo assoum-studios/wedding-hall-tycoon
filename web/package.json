@@ -1,9 +1,9 @@
 {
-  "name": "wedding-hall-owner-tycoon",
+  "name": "wedding-hall-tycoon",
   "private": true,
-  "version": "1.0.0",
+  "version": "2.0.0",
   "type": "module",
-  "description": "Wedding Hall Owner Tycoon - Assoum Studios",
+  "description": "Wedding Hall Tycoon - Assoum Studios",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

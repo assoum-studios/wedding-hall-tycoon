@@ -17,8 +17,7 @@ async function boot() {
   initLang();
   // Loading screen: logo in the right language, a progress bar and a tip.
   const tipEl = document.getElementById('boot-tip'); const bar = document.getElementById('boot-bar') as HTMLElement | null; const logo = document.getElementById('boot-logo') as HTMLImageElement | null;
-  // inline vector logo so it uses the game's chunky font once it loads
-  if (logo) { const d = document.createElement('div'); d.style.width = 'min(380px,82vw)'; d.style.filter = 'drop-shadow(0 10px 16px rgba(0,0,0,.4))'; d.innerHTML = logoSVG(getLang()); logo.replaceWith(d); }
+  void logo; void logoSVG; void getLang;
   if (tipEl) tipEl.textContent = t('tips.' + (1 + Math.floor(Math.random() * 10)));
   if (bar) bar.style.width = '45%';
   try { await Promise.race([document.fonts.ready, new Promise((r) => setTimeout(r, 2500))]); } catch {}
@@ -27,8 +26,10 @@ async function boot() {
   await new Promise((r) => setTimeout(r, 350));
   (window as any).__app = app; // used by automated tests
   (window as any).__dev = { book, invoiceLines };
+  const intro = document.getElementById('intro');
+  if (intro) await new Promise((r) => { const iv = setInterval(() => { if (!document.getElementById('intro')) { clearInterval(iv); r(null); } }, 100); });
   showTitle(app);
-  document.getElementById('boot')?.remove();
+  const bootEl = document.getElementById('boot'); if (bootEl) { bootEl.style.transition = 'opacity .6s'; bootEl.style.opacity = '0'; setTimeout(() => bootEl.remove(), 650); }
   document.addEventListener('visibilitychange', () => suspend(document.hidden));
 }
 boot();

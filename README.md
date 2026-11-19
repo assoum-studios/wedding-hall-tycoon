@@ -1,4 +1,4 @@
-# Wedding Hall Owner Tycoon
+# Wedding Hall Tycoon
 
 A 3D mobile tycoon game for Android by **Assoum Studios**. You inherit Grandma Rosa's run-down Rose Hall and her
 $40,000 debt, beat Victor Crane of the Grand Palace, and grow a wedding empire across six halls.

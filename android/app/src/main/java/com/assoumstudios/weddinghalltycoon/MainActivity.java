@@ -23,6 +23,7 @@ import androidx.webkit.WebViewAssetLoader;
 public class MainActivity extends Activity {
     private WebView web;
     private WebViewAssetLoader loader;
+    private Monetization money;
 
     @SuppressLint("SetJavaScriptEnabled")
     @Override
@@ -41,7 +42,7 @@ public class MainActivity extends Activity {
         s.setTextZoom(100);
         s.setSupportZoom(false);
         web.setOverScrollMode(View.OVER_SCROLL_NEVER);
-        web.setBackgroundColor(0xFF7AB8F0);
+        web.setBackgroundColor(0xFFFBD3E0);
         web.setWebChromeClient(new WebChromeClient());
         web.setWebViewClient(new WebViewClient() {
             @Override
@@ -53,10 +54,14 @@ public class MainActivity extends Activity {
                 return !"appassets.androidplatform.net".equals(request.getUrl().getHost());
             }
         });
+        // Ads + purchases, reachable from the game as window.NativeBridge (only our own bundled page is ever loaded).
+        money = new Monetization(this, web);
+        web.addJavascriptInterface(money, "NativeBridge");
         setContentView(web);
         hideSystemBars();
         if (savedInstanceState != null) web.restoreState(savedInstanceState);
         else web.loadUrl("https://appassets.androidplatform.net/assets/www/index.html");
+        money.start();
     }
 
     private void hideSystemBars() {
@@ -85,7 +90,7 @@ public class MainActivity extends Activity {
     }
 
     @Override protected void onPause() { super.onPause(); web.evaluateJavascript("window.__app && window.__app.persist()", null); web.onPause(); }
-    @Override protected void onResume() { super.onResume(); web.onResume(); hideSystemBars(); }
+    @Override protected void onResume() { super.onResume(); web.onResume(); hideSystemBars(); if (money != null) money.onResume(); }
     @Override protected void onSaveInstanceState(Bundle out) { super.onSaveInstanceState(out); web.saveState(out); }
     @Override protected void onDestroy() { if (web != null) web.destroy(); super.onDestroy(); }
 }

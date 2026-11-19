@@ -203,7 +203,7 @@ function settingsView(app: App, closeOffice: () => void) {
     row(t('settings.language'), seg(['en', 'ar'] as const, getLang(), (o) => (o === 'en' ? 'English' : 'العربية'), (o) => { setLang(o); closeOffice(); })),
     CHEATS_ENABLED ? row(t('settings.cheat'), h('div', { class: 'row', style: { width: '260px' } }, cheatIn, btn(t('settings.apply'), () => { const ok = runCheat(g, cheatIn.value); toast(ok ? t('settings.cheatOk') : t('settings.cheatBad'), ok ? 'good' : 'bad'); if (ok) { app.world.loadHall(); app.world.setupDay(); app.refresh(); } }, 'small'))) : null,
     h('div', { class: 'row', style: { justifyContent: 'flex-end', marginTop: '10px' } }, btn(t('howto.title'), () => showHowTo(), 'ghost'), btn(t('settings.backToTitle'), () => { closeOffice(); app.backToTitle(); }, 'red'))),
-    h('div', { class: 'sub', style: { textAlign: 'center' } }, t('settings.version', { v: '1.0.0' }))];
+    h('div', { class: 'sub', style: { textAlign: 'center' } }, t('settings.version', { v: '2.0.0' }))];
 }
 export { num, staffIn, PLOT_BY_ID, loanDef, shopItem, stars, ic, _u };
 

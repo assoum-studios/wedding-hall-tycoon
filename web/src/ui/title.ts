@@ -110,7 +110,7 @@ export function customize(app: App, slot: number, diff: Difficulty) {
     s.halls[0].name = getLang() === 'ar' ? 'قاعة الورد' : 'The Rose Hall'; s.settings.quality = app.g.s.settings.quality;
     app.startNew(slot, s, true);
   }, 'green', { id: 'btn-start-empire' }));
-  const el = div('custom', h('div', { class: 'logo-small', html: logoSVG() }), first.np, first.nt, startBtn);
+  const el = div('custom', h('div', { class: 'logo-small', html: logoSVG(undefined, true) }), first.np, first.nt, startBtn);
   setScreen(el);
 }
 export { initAudio };

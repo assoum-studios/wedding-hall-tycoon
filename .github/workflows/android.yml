@@ -88,7 +88,7 @@ jobs:
         working-directory: android
         env:
           VERSION_CODE: ${{ github.run_number }}
-          VERSION_NAME: 1.0.${{ github.run_number }}
+          VERSION_NAME: 2.0.0
         run: gradle --no-daemon bundleRelease
 
       - name: Verify the signature
@@ -96,11 +96,11 @@ jobs:
           AAB=android/app/build/outputs/bundle/release/app-release.aab
           jarsigner -verify "$AAB" | tail -1
           mkdir -p out
-          cp "$AAB" "out/WeddingHallOwnerTycoon-1.0.${{ github.run_number }}${{ steps.key.outputs.suffix }}.aab"
+          cp "$AAB" "out/WeddingHallTycoon-2.0.0-build${{ github.run_number }}${{ steps.key.outputs.suffix }}.aab"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: WeddingHallOwnerTycoon-aab
+          name: WeddingHallTycoon-aab
           path: out/*.aab
 
       - name: Publish the web build (for testing in a browser)
